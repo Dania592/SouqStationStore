@@ -1,0 +1,9 @@
+rootProject.name = 'SouqStationStore'
+
+include 'shared'
+include 'schemas'
+include 'publisher-service'
+include 'platform-service'
+include 'notification-service'
+
+include 'notification-service:src'

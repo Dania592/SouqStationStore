@@ -10,6 +10,9 @@ Le projet s’inscrit dans le cadre des modules **Langages de la JVM** et **Ing�
 - Contrats de données versionnés (Schema Registry)
 - Traitements orientés événements (publication, consommation, routage)
 
+## Guide de lancement 
+Voir le fichier : docs/GuideLancement.md
+
 ## Structure proposée V1
 ### Structure générale 
 souqstationstore/

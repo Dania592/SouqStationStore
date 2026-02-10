@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: platform-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/souq
+    username: souq
+    password: souq
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
 
   kafka:
     bootstrap-servers: localhost:29092

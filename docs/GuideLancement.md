@@ -48,3 +48,24 @@ http://localhost:8082/publisher/publish-game?gameId=game-1&title=Halo
 ```
 - vérification dans Kafka UI : http://localhost:8080
   → Topics → souq.publisher.events → Messages
+
+## Test de notification 
+```bash
+docker exec -it docker-kafka-1 bash
+
+kafka-console-producer \
+  --bootstrap-server kafka:9092 \
+  --topic souq.platform.events \
+  --property "parse.key=true" \
+  --property "key.separator=:" << 'EOF'
+game-1:{"eventId":"evt-002","eventType":"IncidentReported","occurredAt":"2026-02-10T12:01:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1","description":"Crash au lancement"}}
+EOF
+
+kafka-console-producer \
+  --bootstrap-server kafka:9092 \
+  --topic souq.platform.events \
+  --property "parse.key=true" \
+  --property "key.separator=:" << 'EOF'
+user-1:{"eventId":"evt-001","eventType":"GamePurchased","occurredAt":"2026-02-10T12:00:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1"}}
+EOF
+```

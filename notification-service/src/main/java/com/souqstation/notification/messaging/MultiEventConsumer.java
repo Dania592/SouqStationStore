@@ -86,6 +86,8 @@ public class MultiEventConsumer {
 
         // marquer event consommé
         Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
-        consumedEventRepository.save(new ConsumedEventEntity(event.getEventId(), event.getEventType(), occurredAt));
+        consumedEventRepository.save(
+                new ConsumedEventEntity(event.getEventId(), event.getEventType(), occurredAt)
+        );
     }
 }

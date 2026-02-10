@@ -31,3 +31,6 @@ spring:
 souq:
   topics:
     publisher: souq.publisher.events
+  kafka:
+    topics:
+      platform: souq.platform.events

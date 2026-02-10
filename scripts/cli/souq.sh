@@ -6,6 +6,7 @@ set -euo pipefail
 # =========================
 PUBLISHER_URL="${PUBLISHER_URL:-http://localhost:8082}"
 NOTIFICATION_URL="${NOTIFICATION_URL:-http://localhost:8083}"
+PLATFORM_URL="${PLATFORM_URL:-http://localhost:8081}"
 
 TOPIC_PUBLISHER="${TOPIC_PUBLISHER:-souq.publisher.events}"
 TOPIC_PLATFORM="${TOPIC_PLATFORM:-souq.platform.events}"
@@ -91,6 +92,8 @@ Usage:
   ./scripts/cli/souq.sh help
   ./scripts/cli/souq.sh health
 
+Platform (REST):
+  ./scripts/cli/souq.sh platform register-user <userId> <email> <displayName>
 Publisher (REST):
   ./scripts/cli/souq.sh publisher publish-game <gameId> <title>
 
@@ -157,6 +160,29 @@ case "${cmd}" in
         ;;
       *)
         die "Sous-commande notif inconnue. (attendu: get)"
+        ;;
+    esac
+    ;;
+
+  platform)
+    case "${sub}" in
+      register-user)
+        userId="${3:-}"
+        email="${4:-}"
+        displayName="${5:-}"
+
+        [[ -n "${userId}" && -n "${email}" && -n "${displayName}" ]] || \
+          die "Usage: platform register-user <userId> <email> <displayName>"
+
+        # Appel robuste (encodage safe)
+        curl -sS --fail --get "${PLATFORM_URL}/platform/users/register" \
+          --data-urlencode "userId=${userId}" \
+          --data-urlencode "email=${email}" \
+          --data-urlencode "displayName=${displayName}"
+        echo
+        ;;
+      *)
+        die "Sous-commande platform inconnue (attendu: register-user)"
         ;;
     esac
     ;;

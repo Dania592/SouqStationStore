@@ -69,3 +69,10 @@ kafka-console-producer \
 user-1:{"eventId":"evt-001","eventType":"GamePurchased","occurredAt":"2026-02-10T12:00:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1"}}
 EOF
 ```
+
+## Création d'utilisateur 
+http://localhost:8081/platform/users/register?userId=user-1&email=user1@test.com&displayName=User1
+```bash
+ docker exec -it e2b70b686373 psql -U souq souq
+ select * from users;
+```

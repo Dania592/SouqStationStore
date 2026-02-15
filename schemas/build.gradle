@@ -1,7 +1,18 @@
 plugins {
     id 'java'
+    id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1'
+}
+
+group = 'com.souqstation'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
-    // optionnel : plugin avro plus tard
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.apache.avro:avro:1.11.3'
 }

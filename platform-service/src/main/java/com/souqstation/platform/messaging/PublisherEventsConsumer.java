@@ -2,14 +2,13 @@ package com.souqstation.platform.messaging;
 
 import com.souqstation.platform.persistence.ConsumedEventEntity;
 import com.souqstation.platform.persistence.ConsumedEventRepository;
-import com.souqstation.shared.events.EventEnvelope;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
+import com.souqstation.schemas.events.GamePublished;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Component
 public class PublisherEventsConsumer {
@@ -21,27 +20,33 @@ public class PublisherEventsConsumer {
     }
 
     @KafkaListener(topics = "${souq.topics.publisher}")
-    public void onEvent(ConsumerRecord<String, EventEnvelope> record, Acknowledgment ack) {
-        EventEnvelope event = record.value();
-        UUID eventId = event.eventId();
+    public void onEvent(ConsumerRecord<String, GamePublished> record, Acknowledgment ack) {
 
-        // 1) Idempotence check
+        GamePublished event = record.value();
+
+        String eventId = event.getEventId();
+        String eventType = event.getSchema().getName(); // => "GamePublished"
+        Instant occurredAt = event.getOccurredAt();
+
+        // 1) Idempotence
         if (consumedEventRepository.existsById(eventId)) {
             System.out.println("[PLATFORM] duplicate ignored eventId=" + eventId);
             ack.acknowledge();
             return;
         }
 
-        // 2) Mark as processed (simple version)
-        consumedEventRepository.save(new ConsumedEventEntity(eventId, Instant.now()));
+        // 2) Save processed marker (+ metadata)
+        consumedEventRepository.save(
+                new ConsumedEventEntity(eventId, eventType, occurredAt, Instant.now())
+        );
 
-        // 3) Process business logic (V0: log)
+        // 3) Log business
         System.out.println("[PLATFORM] processed key=" + record.key()
-                + " type=" + event.eventType()
+                + " type=" + eventType
                 + " eventId=" + eventId
-                + " payload=" + event.payload());
+                + " gameId=" + event.getGameId()
+                + " title=" + event.getTitle());
 
-        // 4) ACK after success
         ack.acknowledge();
     }
 }

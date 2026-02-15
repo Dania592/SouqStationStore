@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "GamePublished",
+  "namespace": "com.souqstation.schemas.events",
+  "doc": "Event emitted when a new game is published by a publisher.",
+  "fields": [
+    { "name": "eventId", "type": "string", "doc": "UUID as string" },
+    {
+      "name": "occurredAt",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time in epoch millis"
+    },
+    { "name": "schemaVersion", "type": "int", "default": 1 },
+
+    { "name": "gameId", "type": "string" },
+    { "name": "title", "type": "string" }
+  ]
+}

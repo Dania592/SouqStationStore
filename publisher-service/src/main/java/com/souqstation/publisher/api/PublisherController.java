@@ -1,10 +1,11 @@
 package com.souqstation.publisher.api;
 
 import com.souqstation.publisher.messaging.PublisherEventProducer;
-import com.souqstation.shared.events.EventEnvelope;
+import com.souqstation.schemas.events.GamePublished;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/publisher")
@@ -17,13 +18,17 @@ public class PublisherController {
     }
 
     @RequestMapping(value = "/publish-game", method = {RequestMethod.POST, RequestMethod.GET})
-    public EventEnvelope publishGame(@RequestParam String gameId, @RequestParam String title) {
-        EventEnvelope event = EventEnvelope.of(
-                "GamePublished",
-                Map.of("gameId", gameId, "title", title)
-        );
+    public GamePublished publishGame(@RequestParam String gameId, @RequestParam String title) {
+
+        GamePublished event = GamePublished.newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setOccurredAt(Instant.ofEpochSecond(Instant.now().toEpochMilli()))
+                .setSchemaVersion(1)
+                .setGameId(gameId)
+                .setTitle(title)
+                .build();
+
         producer.publish(gameId, event);
         return event;
     }
-
 }

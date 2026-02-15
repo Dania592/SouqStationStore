@@ -73,6 +73,6 @@ EOF
 ## Création d'utilisateur 
 http://localhost:8081/platform/users/register?userId=user-1&email=user1@test.com&displayName=User1
 ```bash
- docker exec -it e2b70b686373 psql -U souq souq
+ docker exec -it docker-postgres-1  psql -U souq souq
  select * from users;
 ```

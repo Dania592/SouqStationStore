@@ -1,6 +1,7 @@
 package com.souqstation.platform.api;
 
 import com.souqstation.platform.service.UserService;
+import com.souqstation.schemas.events.UserRegistered;
 import com.souqstation.shared.events.EventEnvelope;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,8 @@ public class UserController {
         this.userService = userService;
     }
 
-    // POST recommandé (propre). Tu peux aussi ajouter GET si tu veux tester vite.
     @PostMapping("/users")
-    public EventEnvelope register(
+    public UserRegistered register(
             @RequestParam String userId,
             @RequestParam String email,
             @RequestParam String displayName
@@ -24,9 +24,8 @@ public class UserController {
         return userService.registerUser(userId, email, displayName);
     }
 
-    // Optionnel pour tester rapidement en navigateur
     @GetMapping("/users/register")
-    public EventEnvelope registerGet(
+    public UserRegistered registerGet(
             @RequestParam String userId,
             @RequestParam String email,
             @RequestParam String displayName

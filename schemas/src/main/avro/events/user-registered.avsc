@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "UserRegistered",
+  "namespace": "com.souqstation.schemas.events",
+  "doc": "Event emitted when a user registers on the platform.",
+  "fields": [
+    { "name": "eventId", "type": "string", "doc": "UUID as string" },
+    {
+      "name": "occurredAt",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time in epoch millis"
+    },
+    { "name": "schemaVersion", "type": "int", "default": 1 },
+
+    { "name": "userId", "type": "string" },
+    { "name": "email", "type": "string" },
+    { "name": "displayName", "type": "string" }
+  ]
+}

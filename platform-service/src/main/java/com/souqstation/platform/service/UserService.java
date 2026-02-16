@@ -1,45 +1,46 @@
 package com.souqstation.platform.service;
 
+import com.souqstation.platform.messaging.PlatformUserEventProducer;
 import com.souqstation.platform.persistence.UserEntity;
 import com.souqstation.platform.persistence.UserRepository;
-import com.souqstation.platform.messaging.PlatformEventProducer;
-import com.souqstation.shared.events.EventEnvelope;
+import com.souqstation.schemas.events.UserRegistered;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PlatformEventProducer producer;
+    private final PlatformUserEventProducer producer;
 
-    public UserService(UserRepository userRepository, PlatformEventProducer producer) {
+    public UserService(UserRepository userRepository, PlatformUserEventProducer producer) {
         this.userRepository = userRepository;
         this.producer = producer;
     }
 
     @Transactional
-    public EventEnvelope registerUser(String userId, String email, String displayName) {
-        if (userRepository.existsById(userId)) {
-            // Idempotent côté API: si user existe déjà, on renvoie un event "dummy" ou on renvoie l'existant
-            // Ici: on renvoie un event UserRegistered quand même (option) OU on renvoie un message.
-            // Pour rester simple: on renvoie un event mais sans réécrire DB.
-        } else {
+    public UserRegistered registerUser(String userId, String email, String displayName) {
+        Instant now = Instant.now();
+
+        if (!userRepository.existsById(userId)) {
             if (userRepository.existsByEmail(email)) {
                 throw new IllegalArgumentException("Email already used: " + email);
             }
-            userRepository.save(new UserEntity(userId, email, displayName, Instant.now()));
+            userRepository.save(new UserEntity(userId, email, displayName, now));
         }
 
-        EventEnvelope event = EventEnvelope.of(
-                "UserRegistered",
-                Map.of("userId", userId, "email", email, "displayName", displayName)
-        );
+        UserRegistered event = UserRegistered.newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setOccurredAt(Instant.ofEpochSecond(now.toEpochMilli()))
+                .setSchemaVersion(1)
+                .setUserId(userId)
+                .setEmail(email)
+                .setDisplayName(displayName)
+                .build();
 
-        // key = userId
         producer.publish(userId, event);
         return event;
     }

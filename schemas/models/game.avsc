@@ -1,0 +1,101 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.shared.models",
+  "name": "Game",
+  "doc": "Modèle de jeu vidéo",
+  "fields": [
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant unique du jeu"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Nom du jeu"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description du jeu"
+    },
+    {
+      "name": "publisherId",
+      "type": "string",
+      "doc": "Identifiant de l'éditeur du jeu"
+    },
+    {
+      "name": "genres",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "namespace": "com.souqstation.shared.models.enums",
+          "name": "GameGenre",
+          "symbols": [
+            "SIMULATION",
+            "STRATEGIE",
+            "JEUX",
+            "ACTION",
+            "RPG",
+            "PUZZLE",
+            "SPORTS",
+            "AVENTURE"
+          ]
+        }
+      },
+      "doc": "Genres du jeu"
+    },
+    {
+      "name": "platforms",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "namespace": "com.souqstation.shared.models.enums",
+          "name": "Platform",
+          "symbols": [
+            "PC",
+            "PS5",
+            "EN_LIGNE"
+          ]
+        }
+      },
+      "doc": "Plateformes de sortie du jeu"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "doc": "Version actuelle du jeu (ex: 1.0.0)"
+    },
+    {
+      "name": "releaseDate",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie du jeu"
+    },
+    {
+      "name": "price",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null,
+      "doc": "Prix du jeu"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date d'ajout en base"
+    }
+  ]
+}

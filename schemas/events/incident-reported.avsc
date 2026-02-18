@@ -1,0 +1,90 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.shared.events",
+  "name": "IncidentReportedEvent",
+  "doc": "Événement : Incident/bug signalé par un utilisateur",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "incident.reported",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "incidentId",
+      "type": "string",
+      "doc": "Identifiant unique de l'incident"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant du jeu affecté"
+    },
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant de l'utilisateur qui signale"
+    },
+    {
+      "name": "pseudo",
+      "type": "string",
+      "doc": "Pseudo du signaleur"
+    },
+    {
+      "name": "severity",
+      "type": {
+        "type": "enum",
+        "namespace": "com.souqstation.shared.events.enums",
+        "name": "IncidentSeverity",
+        "symbols": [
+          "CRITIQUE",
+          "HAUTE",
+          "NORMALE",
+          "BASSE"
+        ]
+      },
+      "doc": "Niveau de sévérité du bug"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "doc": "Description du problème rencontré"
+    },
+    {
+      "name": "environment",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Environnement (plateforme, version OS, etc)"
+    },
+    {
+      "name": "reportedAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date du signalement"
+    }
+  ]
+}

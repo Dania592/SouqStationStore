@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -22,26 +23,29 @@ public class UserService {
     }
 
     @Transactional
-    public UserRegistered registerUser(String userId, String email, String displayName) {
+    public UserRegistered registerUser(String userId, String email,String name, String displayName, Date birth) {
         Instant now = Instant.now();
 
         if (!userRepository.existsById(userId)) {
             if (userRepository.existsByEmail(email)) {
                 throw new IllegalArgumentException("Email already used: " + email);
             }
-            userRepository.save(new UserEntity(userId, email, displayName, now));
+            userRepository.save(new UserEntity(userId, email,name, displayName, birth, now));
         }
 
         UserRegistered event = UserRegistered.newBuilder()
                 .setEventId(UUID.randomUUID().toString())
                 .setOccurredAt(Instant.ofEpochSecond(now.toEpochMilli()))
-                .setSchemaVersion(1)
+                .setCreatedAt(Instant.ofEpochSecond(now.toEpochMilli()))
                 .setUserId(userId)
                 .setEmail(email)
+                .setBirth(birth.toInstant())
+                .setName(name)
                 .setDisplayName(displayName)
                 .build();
 
         producer.publish(userId, event);
+
         return event;
     }
 }

@@ -10,10 +10,12 @@
       "type": { "type": "long", "logicalType": "timestamp-millis" },
       "doc": "Event time in epoch millis"
     },
-    { "name": "schemaVersion", "type": "int", "default": 1 },
-
     { "name": "userId", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "birth", "type": { "type": "long", "logicalType": "timestamp-millis" } },
     { "name": "email", "type": "string" },
-    { "name": "displayName", "type": "string" }
+    { "name": "displayName", "type": "string" },
+    { "name": "createdAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+
   ]
 }

@@ -4,6 +4,8 @@
   "namespace": "com.souqstation.schemas.models",
   "fields": [
     { "name": "userId", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "birth", "type": { "type": "long", "logicalType": "timestamp-millis" } },
     { "name": "email", "type": "string" },
     { "name": "displayName", "type": "string" },
     { "name": "createdAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }

@@ -16,7 +16,6 @@ public class PublisherEventProducer {
             @Value("${souq.topics.publisher}") String topic
     ) {
         this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
         this.topic = topic;
     }
 

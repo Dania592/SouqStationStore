@@ -30,7 +30,7 @@ L'infrastructure est operationnelle et les flux d'evenements principaux ont ét�
 | notification-service | 8083 | En cours | Route les evenements vers les notifications utilisateurs        |
 
 ### Statut de l'Infrastructure
-
+ => à revoir (les ports)
 
 | Composant              | Port  | Statut                              |
 | ---------------------- | ----- | ----------------------------------- |

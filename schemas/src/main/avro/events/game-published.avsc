@@ -7,12 +7,18 @@
     { "name": "eventId", "type": "string", "doc": "UUID as string" },
     {
       "name": "occurredAt",
-      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "type":{"type":"long","logicalType":"timestamp-millis"},
       "doc": "Event time in epoch millis"
     },
     { "name": "schemaVersion", "type": "int", "default": 1 },
 
     { "name": "gameId", "type": "string" },
-    { "name": "title", "type": "string" }
+    { "name": "title", "type": "string" },
+    {"name" :  "description", "type" : "string"},
+    {"name" :  "platformExc", "type" : "com.souqstation.schemas.common.ExecPlatform"},
+    {"name" :  "genres", "type" :  "com.souqstation.schemas.common.GameGenre"},
+    {"name" :  "idEditeur", "type" :  "string"},
+    {"name" :  "version", "type" :  "string", "default" :  "1"},
+    {"name" :  "prixInit", "type" :  "float", "default":  0.0}
   ]
 }

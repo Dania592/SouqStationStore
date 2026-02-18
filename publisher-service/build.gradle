@@ -5,7 +5,6 @@ plugins {
 }
 
 dependencies {
-    implementation project(':shared')
     implementation project(':schemas')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'

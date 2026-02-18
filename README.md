@@ -61,7 +61,6 @@ J'ai retire la dependance invalide dans settings.gradle qui ne servait a rien. J
 souqstationstore/
 │
 ├── schemas/
-├── shared/
 ├── publisher-service/
 ├── platform-service/
 ├── notification-service/
@@ -120,7 +119,7 @@ schemas/
 | publisher.avsc | Avro Model | Structure éditeur           |
 | review.avsc    | Avro Model | Structure d’une évaluation |
 
-#### Shared :
+#### Shared : VIDE POUR L'INSTANT 
 
 Contient les éléments partagés entre tous les services.
 shared/

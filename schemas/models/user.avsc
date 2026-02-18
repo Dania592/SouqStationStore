@@ -1,0 +1,57 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.shared.models",
+  "name": "User",
+  "doc": "Modèle d'utilisateur",
+  "fields": [
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant unique de l'utilisateur"
+    },
+    {
+      "name": "pseudo",
+      "type": "string",
+      "doc": "Pseudo unique de l'utilisateur"
+    },
+    {
+      "name": "displayName",
+      "type": "string",
+      "doc": "Nom d'affichage de l'utilisateur"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "Adresse email de l'utilisateur"
+    },
+    {
+      "name": "dateNaissance",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "default": null,
+      "doc": "Date de naissance de l'utilisateur"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp de création du compte"
+    },
+    {
+      "name": "solde",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null,
+      "doc": "Solde/crédit de l'utilisateur"
+    }
+  ]
+}

@@ -84,9 +84,12 @@ schemas/
 ├── events/
 │   ├── game-published.avsc
 │   ├── patch-published.avsc
+│   ├── dlc-published.avsc
 │   ├── user-registered.avsc
 │   ├── game-purchased.avsc
+│   ├── dlc-purchased.avsc
 │   ├── review-submitted.avsc
+│   ├── review-rated.avsc
 │   ├── comment-submitted.avsc
 │   ├── incident-reported.avsc
 │   └── user-notification.avsc
@@ -94,30 +97,38 @@ schemas/
 └── models/
 ├── game.avsc
 ├── patch.avsc
+├── dlc.avsc
 ├── user.avsc
 ├── publisher.avsc
-└── review.avsc
+├── review.avsc
+└── purchase.avsc
 
 
 | Fichier                | Type       | Rôle                                   |
 | ---------------------- | ---------- | --------------------------------------- |
 | game-published.avsc    | Avro Event | Publication d’un nouveau jeu           |
 | patch-published.avsc   | Avro Event | Publication d’un correctif             |
-| user-registered.avsc   | Avro Event | Inscription d’un utilisateur           |
-| game-purchased.avsc    | Avro Event | Achat d’un jeu                         |
-| review-submitted.avsc  | Avro Event | Soumission d’une évaluation           |
-| comment-submitted.avsc | Avro Event | Soumission d’un commentaire            |
-| incident-reported.avsc | Avro Event | Signalement d’un incident              |
+| dlc-published.avsc     | Avro Event | Publication d'un DLC                   |
+| user-registered.avsc   | Avro Event | Inscription d'un utilisateur           |
+| game-purchased.avsc    | Avro Event | Achat d'un jeu                         |
+| dlc-purchased.avsc     | Avro Event | Achat d'un DLC                         |
+| review-submitted.avsc  | Avro Event | Soumission d'une évaluation           |
+| review-rated.avsc      | Avro Event | Notation d'une évaluation (utile/pas utile) |
+| comment-submitted.avsc | Avro Event | Soumission d'un commentaire            |
+| incident-reported.avsc | Avro Event | Signalement d'un incident              |
 | user-notification.avsc | Avro Event | Notification envoyée à un utilisateur |
+
 
 
 | Fichier        | Type       | Rôle                        |
 | -------------- | ---------- | ---------------------------- |
 | game.avsc      | Avro Model | Structure d’un jeu          |
 | patch.avsc     | Avro Model | Structure d’un correctif    |
+| dlc.avsc       | Avro Model | Structure d'un DLC          |
 | user.avsc      | Avro Model | Structure utilisateur        |
 | publisher.avsc | Avro Model | Structure éditeur           |
-| review.avsc    | Avro Model | Structure d’une évaluation |
+| review.avsc    | Avro Model | Structure d'une évaluation |
+| purchase.avsc  | Avro Model | Structure d'une transaction |
 
 #### Shared : VIDE POUR L'INSTANT 
 

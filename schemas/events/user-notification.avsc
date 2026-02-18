@@ -1,0 +1,89 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.shared.events",
+  "name": "UserNotificationEvent",
+  "doc": "Événement : Notification envoyée à un utilisateur",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "user.notification",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "notificationId",
+      "type": "string",
+      "doc": "Identifiant unique de la notification"
+    },
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant du destinataire"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "namespace": "com.souqstation.shared.events.enums",
+        "name": "NotificationType",
+        "symbols": [
+          "GAME_PUBLISHED",
+          "PATCH_RELEASED",
+          "DLC_AVAILABLE",
+          "PURCHASE_CONFIRMATION",
+          "REVIEW_RESPONSE",
+          "INCIDENT_UPDATE",
+          "NEW_RELEASE",
+          "WISHLIST_AVAILABLE"
+        ]
+      },
+      "doc": "Type de notification"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "doc": "Contenu du message"
+    },
+    {
+      "name": "sourceEventId",
+      "type": "string",
+      "doc": "ID de l'événement source ayant déclenché cette notification"
+    },
+    {
+      "name": "relatedEntityId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "ID de l'entité liée (gameId, reviewId, etc)"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de création de la notification"
+    }
+  ]
+}

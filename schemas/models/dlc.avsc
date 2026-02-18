@@ -1,0 +1,62 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.shared.models",
+  "name": "DLC",
+  "doc": "Modèle de contenu téléchargeable (DLC)",
+  "fields": [
+    {
+      "name": "dlcId",
+      "type": "string",
+      "doc": "Identifiant unique du DLC"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant du jeu parent"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Nom du DLC"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description du contenu DLC"
+    },
+    {
+      "name": "price",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null,
+      "doc": "Prix du DLC"
+    },
+    {
+      "name": "publisherId",
+      "type": "string",
+      "doc": "Identifiant de l'éditeur"
+    },
+    {
+      "name": "releaseDate",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie du DLC"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date d'enregistrement"
+    }
+  ]
+}

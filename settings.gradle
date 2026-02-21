@@ -7,4 +7,3 @@ include 'schemas'
 include 'publisher-service'
 include 'platform-service'
 include 'notification-service'
-gi

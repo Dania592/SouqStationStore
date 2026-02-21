@@ -50,6 +50,50 @@ sudo ./scripts/cli/souq.sh event purchase user-1 game-1
 curl http://localhost:8083/notifications/user-1
 ```
 
+### Commandes curl de test local
+
+> Prérequis : services démarrés (`platform-service` 8081, `publisher-service` 8082, `notification-service` 8083).
+
+```bash
+# 1) Publier un jeu (Publisher -> souq.publisher.events)
+curl -G "http://localhost:8082/publisher/publish-game" \
+  --data-urlencode "gameId=game-1" \
+  --data-urlencode "title=Halo" \
+  --data-urlencode "description=FPS sci-fi" \
+  --data-urlencode "platform=PC" \
+  --data-urlencode "genre=ACTION" \
+  --data-urlencode "idEditeur=pub-1" \
+  --data-urlencode "version=1.0.0" \
+  --data-urlencode "prixInit=49.99"
+
+# 2) Publier un patch
+curl -G "http://localhost:8082/publisher/publish-patch" \
+  --data-urlencode "patchId=patch-1" \
+  --data-urlencode "gameId=game-1" \
+  --data-urlencode "previousVersion=1.0.0" \
+  --data-urlencode "targetVersion=1.0.1" \
+  --data-urlencode "description=Crash fix + perf" \
+  --data-urlencode "modifications=CORRECTION,OPTIMISATION"
+
+# 3) Publier un DLC
+curl -G "http://localhost:8082/publisher/publish-dlc" \
+  --data-urlencode "dlcId=dlc-1" \
+  --data-urlencode "gameId=game-1" \
+  --data-urlencode "name=New Maps Pack" \
+  --data-urlencode "description=3 nouvelles cartes" \
+  --data-urlencode "publisherId=pub-1" \
+  --data-urlencode "price=9.99"
+
+# 4) Créer un user (Platform)
+curl -G "http://localhost:8081/platform/users/register" \
+  --data-urlencode "userId=user-1" \
+  --data-urlencode "email=user1@test.com" \
+  --data-urlencode "displayName=User1"
+
+# 5) Vérifier les notifications (Notification)
+curl "http://localhost:8083/notifications/user-1"
+```
+
 ### Modifications Realisees (12 Fevrier 2026)
 
 J'ai retire la dependance invalide dans settings.gradle qui ne servait a rien. J'ai mis a jour Spring Boot de 3.3.2 vers 3.4.2 pour avoir une compatibilite avec le JDK sans casser la configuration generale du projet. J'ai aussi corrige la serialisation dans PublisherEventProducer pour qu'il envoie du JSON, comme les autres producers.

@@ -303,6 +303,85 @@ function FollowRedactor {
 
   Pause
 }
+function ShowGamesOfFollowedEditor {
+
+  if ($script:CURRENT_ROLE -eq "NONE") {
+    Write-Host "❌ Login first"
+    Pause
+    return
+  }
+
+  # 1) récupérer les éditeurs suivis
+  try {
+    $editorsUrl = "$($env:PLATFORM_URL)/platform/users/following-redactors?userId=$($script:CURRENT_USER_ID)"
+    $editors = Invoke-RestMethod -Method GET -Uri $editorsUrl
+  } catch {
+    ShowHttpError $_
+    Pause
+    return
+  }
+
+  if ($null -eq $editors -or $editors.Count -eq 0) {
+    Write-Host "You don't follow any editor yet."
+    Pause
+    return
+  }
+
+  Write-Host ""
+  Write-Host "Editors you follow:"
+  $i = 1
+  foreach ($e in $editors) {
+    Write-Host ("{0}) {1} ({2})" -f $i, $e.displayName, $e.userId)
+    $i++
+  }
+
+  # 2) choisir un éditeur (par index ou id)
+  $choice = Prompt "Choose editor number OR type editorId" "1"
+  $editorId = $null
+
+  if ($choice -match '^\d+$') {
+    $idx = [int]$choice
+    if ($idx -lt 1 -or $idx -gt $editors.Count) {
+      Write-Host "❌ Invalid number"
+      Pause
+      return
+    }
+    $editorId = $editors[$idx - 1].userId
+  } else {
+    $editorId = $choice
+  }
+
+  # 3) appeler publisher pour récupérer les jeux
+  try {
+    $gamesUrl = "$($env:PUBLISHER_URL)/publisher/games/by-publisher?idEditeur=$editorId"
+    $games = Invoke-RestMethod -Method GET -Uri $gamesUrl
+  } catch {
+    ShowHttpError $_
+    Pause
+    return
+  }
+
+  Write-Host ""
+  Write-Host ("Games published by {0}:" -f $editorId)
+
+  if ($null -eq $games -or $games.Count -eq 0) {
+    Write-Host "No games found."
+    Pause
+    return
+  }
+
+  foreach ($g in $games) {
+    Write-Host "----------------------"
+    Write-Host ("{0} ({1})" -f $g.title, $g.gameId)
+    Write-Host ("Platform: {0}" -f $g.platform)
+    Write-Host ("Genre: {0}" -f $g.genre)
+    Write-Host ("Version: {0}" -f $g.version)
+    if ($g.price -ne $null) { Write-Host ("Price: {0}" -f $g.price) }
+    if ($g.releaseDate -ne $null) { Write-Host ("ReleaseDate: {0}" -f $g.releaseDate) }
+  }
+
+  Pause
+}
 function ShowFollowedRedactors {
 
   if ($script:CURRENT_ROLE -eq "NONE") {
@@ -352,16 +431,15 @@ function Menu {
   Write-Host "2) Show following"
   Write-Host "3) Follow editor"
   Write-Host "4) Show followed editors"
+  Write-Host "5) Show games of a followed editor"
 
   if ($script:CURRENT_ROLE -eq "REDACTOR") {
-    Write-Host "5) Publish game"
-    Write-Host "6) My games"
-    Write-Host "7) Logout"
+    Write-Host "6) Publish game"
+    Write-Host "7) My games"
+    Write-Host "8) Logout"
+  } else {
+    Write-Host "6) Logout"
   }
-  else {
-    Write-Host "5) Logout"
-  }
-
   Write-Host "0) Exit"
 }
 
@@ -411,7 +489,10 @@ while ($true) {
     ShowFollowedRedactors
     continue
   }
-
+  if ($c -eq "5") {
+    ShowGamesOfFollowedEditor
+    continue
+  }
   # =====================
   # REDACTOR uniquement
   # =====================

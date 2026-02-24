@@ -9,4 +9,5 @@ public interface GameRepository extends JpaRepository<GameEntity, String> {
     boolean existsByGameId(String gameId);
 
     List<GameEntity> findByPublisherId(String publisherId);
+    long countByPublisherId(String publisherId);
 }

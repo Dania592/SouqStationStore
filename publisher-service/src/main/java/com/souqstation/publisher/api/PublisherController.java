@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 
@@ -109,5 +110,42 @@ public class PublisherController {
                 "idEditeur", publisherId,
                 "occurredAt", now.toString()
         ));
+    }
+
+    @GetMapping("/games/by-publisher")
+    public ResponseEntity<?> getGamesByPublisher(
+            @RequestParam(name = "idEditeur") String publisherId
+    ) {
+        // sécurité métier
+        if (!platformClient.redactorExists(publisherId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "REDACTOR_NOT_FOUND",
+                    "publisherId", publisherId
+            ));
+        }
+
+        List<GameEntity> games = gameRepository.findByPublisherId(publisherId);
+
+        List<Map<String, Object>> result = games.stream()
+                .map(g -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("gameId", g.getGameId());
+                    m.put("title", g.getName());
+                    m.put("platform", g.getPlatformExc().name());
+                    m.put("genre", g.getGenre().name());
+                    m.put("version", g.getVersion());
+                    m.put("price", g.getPrice()); // Double (nullable) OK
+                    m.put("releaseDate", g.getReleaseDate()); // Instant OK (Jackson)
+                    return m;
+                })
+                .toList();
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/games/count")
+    public long countGames(@RequestParam(name = "idEditeur") String publisherId) {
+        return gameRepository.countByPublisherId(publisherId);
     }
 }

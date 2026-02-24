@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -32,7 +34,6 @@ public class UserEntity {
     @Column(name = "solde", nullable = false)
     private float solde;
 
-
     protected UserEntity() {}
 
     public UserEntity(String userId, String email, String name, String displayName, Date birth, Instant createdAt, float solde) {
@@ -43,6 +44,29 @@ public class UserEntity {
         this.birth = birth;
         this.name = name;
         this.solde = solde;
+    }
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_following",
+            joinColumns = @JoinColumn(name = "user_id"),       // celui qui suit
+            inverseJoinColumns = @JoinColumn(name = "followed_id") // celui qui est suivi
+    )
+    private Set<UserEntity> following = new HashSet<>();
+
+    public Set<UserEntity> getFollowing() {
+        return following;
+    }
+
+    public void follow(UserEntity other) {
+        if (other == null) return;
+        if (this.userId.equals(other.userId)) return; // éviter soi-même
+        this.following.add(other);
+    }
+
+    public void unfollow(UserEntity other) {
+        if (other == null) return;
+        this.following.remove(other);
     }
 
     public String getUserId() { return userId; }

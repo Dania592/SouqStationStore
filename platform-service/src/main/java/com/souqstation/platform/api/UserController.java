@@ -127,5 +127,61 @@ public class UserController {
                 "redactor", redactor
         ));
     }
+    @PostMapping("/users/follow")
+    public ResponseEntity<?> follow(
+            @RequestParam String userId,
+            @RequestParam String followedId
+    ) {
+        userService.followUser(userId, followedId);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "FOLLOWED",
+                "userId", userId,
+                "followedId", followedId
+        ));
+    }
+
+    @PostMapping("/users/unfollow")
+    public ResponseEntity<?> unfollow(
+            @RequestParam String userId,
+            @RequestParam String followedId
+    ) {
+        userService.unfollowUser(userId, followedId);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "UNFOLLOWED",
+                "userId", userId,
+                "followedId", followedId
+        ));
+    }
+
+    @GetMapping("/users/following")
+    public ResponseEntity<?> following(@RequestParam String userId) {
+
+        return ResponseEntity.ok(userService.getFollowing(userId));
+    }
+    @GetMapping("/users/following/count")
+    public int count(@RequestParam String userId) {
+        return userService.countFollowing(userId);
+    }
+
+    @PostMapping("/users/follow-redactor")
+    public ResponseEntity<?> followRedactor(
+            @RequestParam String userId,
+            @RequestParam String redactorId
+    ) {
+        userService.followRedactor(userId, redactorId);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "FOLLOWED_REDACTOR",
+                "userId", userId,
+                "redactorId", redactorId
+        ));
+    }
+
+    @GetMapping("/users/following-redactors")
+    public ResponseEntity<?> followingRedactors(@RequestParam String userId) {
+        return ResponseEntity.ok(userService.getFollowedRedactors(userId));
+    }
 
 }

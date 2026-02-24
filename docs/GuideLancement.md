@@ -66,50 +66,7 @@ http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=m
 http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&price=39.99&releaseDate=2025-10-10
 ```
 
-
-## Test de fonctionnement 
-http://localhost:8082/publisher/publish-game?gameId=game-1&title=bonjour&description=un%20jeu%20cool&platform=PC&genre=ACTION&idEditeur=ed-1
-### retour 
-```json
-{
-  "idEditeur": "ed-1",
-  "eventId": "8917e233-f004-4df6-9f96-41c1e6916c27",
-  "description": "un jeu cool",
-  "genre": "ACTION",
-  "status": "PUBLISHED_TO_KAFKA",
-  "gameId": "game-1",
-  "title": "bonjour",
-  "occurredAt": "2026-02-18T22:11:43.995899900Z",
-  "platform": "PC"
-}
-```
-- vérification dans Kafka UI : http://localhost:8080
-  → Topics → souq.publisher.events → Messages
-
-## Test de notification 
+### Follow d'un utilisateur à un autre  
 ```bash
-docker exec -it docker-kafka-1 bash
-
-kafka-console-producer \
-  --bootstrap-server kafka:9092 \
-  --topic souq.platform.events \
-  --property "parse.key=true" \
-  --property "key.separator=:" << 'EOF'
-game-1:{"eventId":"evt-002","eventType":"IncidentReported","occurredAt":"2026-02-10T12:01:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1","description":"Crash au lancement"}}
-EOF
-
-kafka-console-producer \
-  --bootstrap-server kafka:9092 \
-  --topic souq.platform.events \
-  --property "parse.key=true" \
-  --property "key.separator=:" << 'EOF'
-user-1:{"eventId":"evt-001","eventType":"GamePurchased","occurredAt":"2026-02-10T12:00:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1"}}
-EOF
-```
-
-## Création d'utilisateur 
-http://localhost:8081/platform/register-user?userId=user-1&name=Jean%20Dupont&email=jean@mail.com&displayName=JeanGamer&birth=1995-05-12
-```bash
- docker exec -it docker-postgres-1  psql -U souq souq
- select * from users;
+http://localhost:8081/platform/users/follow?userId=U100&followedId=U200
 ```

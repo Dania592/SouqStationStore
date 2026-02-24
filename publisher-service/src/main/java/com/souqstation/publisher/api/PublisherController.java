@@ -1,48 +1,99 @@
 package com.souqstation.publisher.api;
 
 import com.souqstation.publisher.messaging.PublisherEventProducer;
+import com.souqstation.publisher.persistence.GameEntity;
+import com.souqstation.publisher.persistence.GameRepository;
+import com.souqstation.publisher.platform.PlatformClient;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/publisher")
 public class PublisherController {
 
     private final PublisherEventProducer producer;
+    private final GameRepository gameRepository;
+    private final PlatformClient platformClient;
 
-    public PublisherController(PublisherEventProducer producer) {
+    public PublisherController(PublisherEventProducer producer,
+                               GameRepository gameRepository,
+                               PlatformClient platformClient) {
         this.producer = producer;
+        this.gameRepository = gameRepository;
+        this.platformClient = platformClient;
     }
 
     @RequestMapping(value = "/publish-game", method = {RequestMethod.POST, RequestMethod.GET})
     public ResponseEntity<Map<String, Object>> publishGame(
             @RequestParam String gameId,
             @RequestParam String title,
-            @RequestParam String description,
+            @RequestParam(required = false) String description,
             @RequestParam ExecPlatform platform,
             @RequestParam GameGenre genre,
-            @RequestParam String idEditeur
+            @RequestParam(name = "idEditeur") String publisherId,
+            @RequestParam String version,
+            @RequestParam(required = false) Double price,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releaseDate
     ) {
-        String eventId = UUID.randomUUID().toString();
+        // 1) Vérifier que le rédacteur/publisher existe
+        if (!platformClient.redactorExists(publisherId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "REDACTOR_NOT_FOUND",
+                    "publisherId", publisherId
+            ));
+        }
+
+        // 2) Vérifier que le gameId n'existe pas déjà (évite doublons)
+        if (gameRepository.existsById(gameId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "GAME_ID_ALREADY_EXISTS",
+                    "gameId", gameId
+            ));
+        }
+
         Instant now = Instant.now();
+
+        // 3) Sauvegarder en base
+        GameEntity saved = gameRepository.save(
+                new GameEntity(
+                        gameId,
+                        title,
+                        description,
+                        publisherId,
+                        platform,
+                        genre,
+                        version,
+                        price,
+                        releaseDate.toInstant(),
+                        now
+                )
+        );
+
+        // 4) Publier l'event Kafka (schéma Avro)
+        String eventId = UUID.randomUUID().toString();
 
         GamePublished event = GamePublished.newBuilder()
                 .setEventId(eventId)
                 .setOccurredAt(Instant.ofEpochSecond(now.toEpochMilli()))
                 .setSchemaVersion(1)
-                .setGameId(gameId)
-                .setTitle(title)
-                .setDescription(description)
-                .setPlatformExc(platform)
-                .setGenres(genre)
-                .setIdEditeur(idEditeur)
+                .setGameId(saved.getGameId())
+                .setName(saved.getName())
+                .setDescription(saved.getDescription()) // null ok
+                .setPublisherId(saved.getPublisherId())
+                .setPlatformExc(saved.getPlatformExc())
+                .setGenres(saved.getGenre())
+                .setVersion(saved.getVersion())
+                .setPrice(saved.getPrice()) // null ok
+                .setReleaseDate(Instant.ofEpochSecond(saved.getReleaseDate().toEpochMilli()))
                 .build();
 
         producer.publish(gameId, event);
@@ -55,7 +106,7 @@ public class PublisherController {
                 "description", description,
                 "platform", platform.name(),
                 "genre", genre.name(),
-                "idEditeur", idEditeur,
+                "idEditeur", publisherId,
                 "occurredAt", now.toString()
         ));
     }

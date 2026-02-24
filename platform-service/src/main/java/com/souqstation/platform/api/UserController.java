@@ -77,4 +77,32 @@ public class UserController {
                 "individual", String.valueOf(event.getIndividual())
         ));
     }
+
+    @GetMapping("/users/check-email")
+    public ResponseEntity<Map<String, Object>> checkEmail(
+            @RequestParam String email
+    ) {
+        boolean exists = userService.existsByEmail(email);
+
+        if (!exists) {
+            return ResponseEntity.ok(Map.of(
+                    "email", email,
+                    "exists", false
+            ));
+        }
+
+        String userId = userService.findUserIdByEmail(email);
+
+        return ResponseEntity.ok(Map.of(
+                "email", email,
+                "exists", true,
+                "userId", userId
+        ));
+    }
+
+    @GetMapping("/redactors/exists")
+    public ResponseEntity<Map<String, Object>> redactorExists(@RequestParam String userId) {
+        boolean exists = redactorService.existsById(userId);
+        return ResponseEntity.ok(Map.of("userId", userId, "exists", exists));
+    }
 }

@@ -1,24 +1,81 @@
 {
   "type": "record",
-  "name": "GamePublished",
   "namespace": "com.souqstation.schemas.events",
-  "doc": "Event emitted when a new game is published by a publisher.",
+  "name": "GamePublished",
+  "doc": "Événement : Jeu publié",
   "fields": [
-    { "name": "eventId", "type": "string", "doc": "UUID as string" },
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "game.published",
+      "doc": "Type d'événement"
+    },
     {
       "name": "occurredAt",
-      "type":{"type":"long","logicalType":"timestamp-millis"},
-      "doc": "Event time in epoch millis"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
     },
-    { "name": "schemaVersion", "type": "int", "default": 1 },
-
-    { "name": "gameId", "type": "string" },
-    { "name": "title", "type": "string" },
-    {"name" :  "description", "type" : "string"},
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant unique du jeu publié"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Nom du jeu"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description du jeu"
+    },
+    {
+      "name": "publisherId",
+      "type": "string",
+      "doc": "Identifiant de l'éditeur"
+    },
     {"name" :  "platformExc", "type" : "com.souqstation.schemas.common.ExecPlatform"},
     {"name" :  "genres", "type" :  "com.souqstation.schemas.common.GameGenre"},
-    {"name" :  "idEditeur", "type" :  "string"},
-    {"name" :  "version", "type" :  "string", "default" :  "1"},
-    {"name" :  "prixInit", "type" :  "float", "default":  0.0}
+    {
+      "name": "version",
+      "type": "string",
+      "doc": "Version initiale du jeu"
+    },
+    {
+      "name": "price",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null,
+      "doc": "Prix du jeu"
+    },
+    {
+      "name": "releaseDate",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie"
+    }
   ]
 }

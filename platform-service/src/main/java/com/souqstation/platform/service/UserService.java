@@ -49,4 +49,14 @@ public class UserService {
 
         return event;
     }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public String findUserIdByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(UserEntity::getUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found for email: " + email));
+    }
 }

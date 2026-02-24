@@ -66,4 +66,7 @@ public class RedactorService {
 
         return event;
     }
+    public boolean existsById(String userId) {
+        return redactorRepository.existsById(userId);
+    }
 }

@@ -23,14 +23,14 @@ public class UserService {
     }
 
     @Transactional
-    public UserRegistered registerUser(String userId, String email,String name, String displayName, Date birth) {
+    public UserRegistered registerUser(String userId, String email, String name, String displayName, Date birth, float solde) {
         Instant now = Instant.now();
 
         if (!userRepository.existsById(userId)) {
             if (userRepository.existsByEmail(email)) {
                 throw new IllegalArgumentException("Email already used: " + email);
             }
-            userRepository.save(new UserEntity(userId, email,name, displayName, birth, now));
+            userRepository.save(new UserEntity(userId, email,name, displayName, birth, now, solde));
         }
 
         UserRegistered event = UserRegistered.newBuilder()
@@ -41,10 +41,11 @@ public class UserService {
                 .setEmail(email)
                 .setBirth(birth.toInstant())
                 .setName(name)
+                .setSolde(solde)
                 .setDisplayName(displayName)
                 .build();
 
-        producer.publish(userId, event);
+        producer.publishUser(userId, event);
 
         return event;
     }

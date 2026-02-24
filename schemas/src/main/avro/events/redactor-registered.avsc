@@ -1,7 +1,7 @@
 {
   "type": "record",
   "namespace": "com.souqstation.schemas.events",
-  "name": "UserRegistered",
+  "name": "RedactorRegisteredEvent",
   "doc": "Événement : rédacteur enregistré",
   "fields": [
     {
@@ -53,6 +53,11 @@
       "doc": "Date de création du compte"
     },
     {
+      "name" : "individual",
+      "type": "boolean",
+      "doc" : "Indique si le rédacteur est un particulier ou une entreprise"
+    },
+    {
       "name": "name",
       "type": "string",
       "doc" : "Nom de l'utilisateur"
@@ -60,9 +65,9 @@
     {
       "name": "birth",
       "type":
-      { "type": "long",
-        "logicalType": "timestamp-millis"
-      },
+        { "type": "long",
+          "logicalType": "timestamp-millis"
+        },
       "doc" : "Date de naissance de l'utilisateur"
     },
     {

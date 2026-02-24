@@ -29,21 +29,52 @@ wsl
 ## Lancement des services Spring Boot 
 platform-service (consumer) => 8081
 publisher-service (producer) => 8082
-- TODO : à compléter par la suite
+notification-service 
+
+## Tests pour chaque fonctionnalité
+### Création d'un user : 
+```bash
+curl -X POST "http://localhost:8081/platform/register-user" \
+-d "userId=U100" \
+-d "name=Dupont" \
+-d "email=dupont@test.com" \
+-d "displayName=JeanD" \
+-d "birth=1990-05-12" \
+-d "solde=100.5"
+
+// ou 
+http://localhost:8081/platform/register-user?userId=U100&name=Dupont&email=dupont@test.com&displayName=JeanD&birth=1990-05-12&solde=100.5
+````
+
+### Création d'un redactor 
+```bash
+curl -X POST "http://localhost:8081/platform/register-redactor" \
+-d "userId=R200" \
+-d "name=Martin" \
+-d "email=martin@test.com" \
+-d "displayName=MarcM" \
+-d "birth=1985-08-20" \
+-d "solde=250.75" \
+-d "individual=true"
+
+// ou 
+http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=martin%40test.com&displayName=MarcM&birth=1985-08-20&solde=250.75&individual=true
+```
 
 ## Test de fonctionnement 
-http://localhost:8082/publisher/publish-game?gameId=game-1&title=Halo
+http://localhost:8082/publisher/publish-game?gameId=game-1&title=bonjour&description=un%20jeu%20cool&platform=PC&genre=ACTION&idEditeur=ed-1
 ### retour 
 ```json
 {
-  "eventId": "bf2ed04a-b347-4a79-8351-e904b56e6da4",
-  "eventType": "GamePublished",
-  "occurredAt": "2026-02-04T20:59:56.890397300Z",
-  "schemaVersion": 1,
-  "payload": {
-    "gameId": "game-1",
-    "title": "Halo"
-  }
+  "idEditeur": "ed-1",
+  "eventId": "8917e233-f004-4df6-9f96-41c1e6916c27",
+  "description": "un jeu cool",
+  "genre": "ACTION",
+  "status": "PUBLISHED_TO_KAFKA",
+  "gameId": "game-1",
+  "title": "bonjour",
+  "occurredAt": "2026-02-18T22:11:43.995899900Z",
+  "platform": "PC"
 }
 ```
 - vérification dans Kafka UI : http://localhost:8080
@@ -71,7 +102,7 @@ EOF
 ```
 
 ## Création d'utilisateur 
-http://localhost:8081/platform/users/register?userId=user-1&email=user1@test.com&displayName=User1
+http://localhost:8081/platform/register-user?userId=user-1&name=Jean%20Dupont&email=jean@mail.com&displayName=JeanGamer&birth=1995-05-12
 ```bash
  docker exec -it docker-postgres-1  psql -U souq souq
  select * from users;

@@ -40,4 +40,6 @@ souq:
     publisher: souq.publisher.events
   kafka:
     topics:
-      platform: souq.platform.events
+      platform:
+        user: souq.platform.user.events
+        redactor: souq.platform.redactor.events

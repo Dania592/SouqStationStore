@@ -105,4 +105,27 @@ public class UserController {
         boolean exists = redactorService.existsById(userId);
         return ResponseEntity.ok(Map.of("userId", userId, "exists", exists));
     }
+
+    @GetMapping("/redactors/by-email")
+    public ResponseEntity<Map<String, Object>> redactorByEmail(@RequestParam String email) {
+
+        if (!userService.existsByEmail(email)) {
+            return ResponseEntity.ok(Map.of(
+                    "email", email,
+                    "exists", false,
+                    "redactor", false
+            ));
+        }
+
+        String userId = userService.findUserIdByEmail(email);
+        boolean redactor = redactorService.existsById(userId);
+
+        return ResponseEntity.ok(Map.of(
+                "email", email,
+                "exists", true,
+                "userId", userId,
+                "redactor", redactor
+        ));
+    }
+
 }

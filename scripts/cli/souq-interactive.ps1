@@ -9,15 +9,23 @@ if (-not $env:PLATFORM_URL)       { $env:PLATFORM_URL       = "http://localhost:
 if (-not $env:NOTIFICATION_URL)   { $env:NOTIFICATION_URL   = "http://localhost:8083" }
 
 if (-not $env:TOPIC_PUBLISHER)    { $env:TOPIC_PUBLISHER    = "souq.publisher.events" }
-
-# ✅ New split topics for platform (Avro records must NOT share same topic unless using an envelope schema)
 if (-not $env:TOPIC_PLATFORM_USER)     { $env:TOPIC_PLATFORM_USER     = "souq.platform.user.events" }
 if (-not $env:TOPIC_PLATFORM_REDACTOR) { $env:TOPIC_PLATFORM_REDACTOR = "souq.platform.redactor.events" }
-
 if (-not $env:TOPIC_NOTIFICATION) { $env:TOPIC_NOTIFICATION = "souq.notification.events" }
 
 if (-not $env:BOOTSTRAP_IN_DOCKER)      { $env:BOOTSTRAP_IN_DOCKER = "kafka:9092" }
 if (-not $env:KAFKA_CONTAINER_NAME)     { $env:KAFKA_CONTAINER_NAME = "kafka" }
+
+# Platform lookup endpoints (override if different)
+if (-not $env:PLATFORM_CHECK_EMAIL_PATH)   { $env:PLATFORM_CHECK_EMAIL_PATH   = "/platform/users/check-email" }
+if (-not $env:PLATFORM_REDACTOR_EXISTS_PATH){ $env:PLATFORM_REDACTOR_EXISTS_PATH = "/platform/redactors/exists" }
+
+# =========================
+# Session state
+# =========================
+$script:CURRENT_EMAIL = $null
+$script:CURRENT_USER_ID = $null
+$script:CURRENT_IS_REDACTOR = $false
 
 function Pause() { Read-Host "Press Enter to continue..." | Out-Null }
 
@@ -31,20 +39,30 @@ function Banner() {
   Write-Host ("Notification URL     : {0}" -f $env:NOTIFICATION_URL)
   Write-Host ("Kafka container      : {0}" -f $env:KAFKA_CONTAINER_NAME)
   Write-Host "-------------------------------------------"
+
+  if ($script:CURRENT_USER_ID) {
+    $role = if ($script:CURRENT_IS_REDACTOR) { "REDACTOR/EDITEUR" } else { "USER" }
+    Write-Host ("Connected            : {0} (userId={1}, role={2})" -f $script:CURRENT_EMAIL, $script:CURRENT_USER_ID, $role)
+  } else {
+    Write-Host "Connected            : (none)"
+  }
+  Write-Host "-------------------------------------------"
 }
 
 function Menu() {
   Write-Host "Choose an action:"
-  Write-Host "  1)  Health check (notification-service)"
-  Write-Host "  2)  Publish game (publisher-service)"
-  Write-Host "  3)  Register user (platform-service)"
-  Write-Host "  3b) Register redactor (platform-service)"
-  Write-Host "  4)  Emit platform event: GamePurchased (Kafka JSON - optional)"
-  Write-Host "  5)  Emit platform event: ReviewSubmitted (Kafka JSON - optional)"
-  Write-Host "  6)  Emit platform event: IncidentReported (Kafka JSON - optional)"
-  Write-Host "  7)  Read notifications for a user (notification-service)"
-  Write-Host "  8)  Tail Kafka topic (publisher/platform-user/platform-redactor/notification)"
-  Write-Host "  9)  Show current config"
+  Write-Host "  1)  Register user (platform-service)"
+  Write-Host "  2)  Register redactor (platform-service)"
+  Write-Host "  3)  Connexion existing account (by email)"
+  Write-Host "  4)  Health check (notification-service)"
+  Write-Host "  5)  Tail Kafka topic"
+  Write-Host "  6)  Show current config"
+
+  # ✅ Option visible uniquement si connecté ET editeur
+  if ($script:CURRENT_USER_ID -and $script:CURRENT_IS_REDACTOR) {
+    Write-Host "  7)  Publish game (publisher-service) [as current editor]"
+  }
+
   Write-Host "  0)  Exit"
 }
 
@@ -60,16 +78,13 @@ function Prompt($label, $default="") {
 
 function UrlEncode([string]$s) { return [System.Uri]::EscapeDataString($s) }
 
-# POST with query params
 function HttpPost($url, $queryHashtable) {
   $pairs = @()
   foreach ($k in $queryHashtable.Keys) {
     $v = $queryHashtable[$k]
-
     if ($v -is [hashtable] -or $v -is [System.Collections.IDictionary]) {
       throw "HttpPost: value for '$k' is a hashtable/object. Expected string/number. Actual=$($v.GetType().FullName)"
     }
-
     $pairs += ("{0}={1}" -f (UrlEncode $k), (UrlEncode ([string]$v)))
   }
   $qs = $pairs -join "&"
@@ -80,28 +95,15 @@ function HttpPost($url, $queryHashtable) {
 function HttpGet($baseUrl, $queryHashtable) {
   $pairs = @()
   foreach ($k in $queryHashtable.Keys) {
-    $pairs += ("{0}={1}" -f (UrlEncode $k), (UrlEncode [string]$queryHashtable[$k]))
+    $v = $queryHashtable[$k]
+    if ($v -is [hashtable] -or $v -is [System.Collections.IDictionary]) {
+      throw "HttpGet: value for '$k' is a hashtable/object. Expected string/number. Actual=$($v.GetType().FullName)"
+    }
+    $pairs += ("{0}={1}" -f (UrlEncode $k), (UrlEncode ([string]$v)))
   }
   $qs = $pairs -join "&"
   $url = "$baseUrl`?$qs"
   return Invoke-RestMethod -Method GET -Uri $url
-}
-
-function KafkaProduce($topic, $key, $json) {
-  $container = $env:KAFKA_CONTAINER_NAME
-  $bootstrap = $env:BOOTSTRAP_IN_DOCKER
-  $msg = "$key`:$json"
-
-  $cmd = @(
-    "exec", "-i", $container, "bash", "-lc",
-    "kafka-console-producer --bootstrap-server $bootstrap --topic $topic --property parse.key=true --property key.separator=:"
-  )
-
-  $p = Start-Process -FilePath "docker" -ArgumentList $cmd -NoNewWindow -PassThru -RedirectStandardInput "pipe"
-  $p.StandardInput.WriteLine($msg)
-  $p.StandardInput.Close()
-  $p.WaitForExit()
-  if ($p.ExitCode -ne 0) { throw "Kafka produce failed (exit code=$($p.ExitCode))" }
 }
 
 function KafkaTail($topic) {
@@ -122,6 +124,13 @@ function ShowConfig() {
   Write-Host "  TOPIC_NOTIFICATION=$($env:TOPIC_NOTIFICATION)"
   Write-Host "  KAFKA_CONTAINER_NAME=$($env:KAFKA_CONTAINER_NAME)"
   Write-Host "  BOOTSTRAP_IN_DOCKER=$($env:BOOTSTRAP_IN_DOCKER)"
+  Write-Host "  PLATFORM_CHECK_EMAIL_PATH=$($env:PLATFORM_CHECK_EMAIL_PATH)"
+  Write-Host "  PLATFORM_REDACTOR_EXISTS_PATH=$($env:PLATFORM_REDACTOR_EXISTS_PATH)"
+  Write-Host ""
+  Write-Host "SESSION:"
+  Write-Host "  CURRENT_EMAIL=$($script:CURRENT_EMAIL)"
+  Write-Host "  CURRENT_USER_ID=$($script:CURRENT_USER_ID)"
+  Write-Host "  CURRENT_IS_REDACTOR=$($script:CURRENT_IS_REDACTOR)"
   Write-Host ""
   Pause
 }
@@ -139,26 +148,6 @@ function ActionHealth() {
   Pause
 }
 
-function ActionPublishGame() {
-  $gameId = Prompt "gameId" "game-1"
-  $title  = Prompt "title" "Halo"
-
-  $base = "$($env:PUBLISHER_URL)/publisher/publish-game"
-  Write-Host ""
-  Write-Host "Calling publisher-service..."
-  try {
-    $r = HttpGet $base @{ gameId=$gameId; title=$title }
-    $r | ConvertTo-Json -Depth 8
-    Write-Host "✅ GamePublished sent (key=gameId=$gameId)"
-  } catch {
-    Write-Host "❌ Request failed => $($_.Exception.Message)"
-  }
-  Pause
-}
-
-# -------------------------------------------------------
-# Register USER  →  POST /platform/register-user
-# -------------------------------------------------------
 function ActionRegisterUser() {
   $userId      = Prompt "userId"      "user-1"
   $name        = Prompt "name"        "John Doe"
@@ -188,15 +177,12 @@ function ActionRegisterUser() {
   Pause
 }
 
-# -------------------------------------------------------
-# Register REDACTOR  →  POST /platform/register-redactor
-# -------------------------------------------------------
 function ActionRegisterRedactor() {
   $userId      = Prompt "userId"      "redactor-1"
   $name        = Prompt "name"        "Jane Doe"
   $email       = Prompt "email"       "redactor1@test.com"
   $displayName = Prompt "displayName" "JaneD"
-  $birth       = Prompt "birth (yyyy-MM-dd)" "1985-06-15"
+  $birth       = [string](Prompt "birth (yyyy-MM-dd)" "1985-06-15")
   $solde       = Prompt "solde (float)" "0.0"
   $individual  = Prompt "individual (true/false)" "true"
 
@@ -222,120 +208,100 @@ function ActionRegisterRedactor() {
   Pause
 }
 
-# NOTE: The following Emit* functions produce JSON via kafka-console-producer.
-# If your platform consumers use Avro deserialization, they should NOT listen to these topics.
-# Keep them for manual testing on a JSON-friendly topic, or switch to Avro tooling.
+function ActionLoginExisting() {
+  $email = Prompt "email" "redactor1@test.com"
 
-function ChoosePlatformJsonTopic() {
+  # 1) lookup userId by email
+  $checkUrl = "$($env:PLATFORM_URL)$($env:PLATFORM_CHECK_EMAIL_PATH)"
   Write-Host ""
-  Write-Host "Choose a platform topic to produce JSON (for manual tests):"
-  Write-Host "  1) platform-user     ($($env:TOPIC_PLATFORM_USER))"
-  Write-Host "  2) platform-redactor ($($env:TOPIC_PLATFORM_REDACTOR))"
-  Write-Host "  3) publisher         ($($env:TOPIC_PUBLISHER))"
-  $c = Read-Host "Choice [1-3]"
-  switch ($c) {
-    "1" { return $env:TOPIC_PLATFORM_USER }
-    "2" { return $env:TOPIC_PLATFORM_REDACTOR }
-    "3" { return $env:TOPIC_PUBLISHER }
-    default { return $env:TOPIC_PUBLISHER }
-  }
-}
-
-function ActionEmitPurchase() {
-  $topic = ChoosePlatformJsonTopic
-  $userId = Prompt "userId" "user-1"
-  $gameId = Prompt "gameId" "game-1"
-  $eventId = Prompt "eventId (blank = auto UUID)" ""
-  if ([string]::IsNullOrWhiteSpace($eventId)) { $eventId = [guid]::NewGuid().ToString() }
-  $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-
-  $json = @{
-    eventId = $eventId
-    eventType = "GamePurchased"
-    occurredAt = $ts
-    schemaVersion = 1
-    payload = @{ userId=$userId; gameId=$gameId }
-  } | ConvertTo-Json -Compress -Depth 8
-
-  Write-Host ""
-  Write-Host "Producing JSON to Kafka: topic=$topic key=$userId"
+  Write-Host "GET $checkUrl?email=$email"
   try {
-    KafkaProduce $topic $userId $json
-    Write-Host "✅ Produced GamePurchased (eventId=$eventId)"
+    $r = HttpGet $checkUrl @{ email = $email }
+
+    if ($null -eq $r.exists -or $r.exists -ne $true) {
+      Write-Host "❌ Email not found: $email"
+      $r | ConvertTo-Json -Depth 10
+      Pause
+      return
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$r.userId)) {
+      Write-Host "❌ Response does not contain userId. Response:"
+      $r | ConvertTo-Json -Depth 10
+      Pause
+      return
+    }
+
+    $script:CURRENT_EMAIL = $email
+    $script:CURRENT_USER_ID = [string]$r.userId
+
+    # 2) check if redactor/editor
+    $redUrl = "$($env:PLATFORM_URL)$($env:PLATFORM_REDACTOR_EXISTS_PATH)"
+    Write-Host ""
+    Write-Host "GET $redUrl?userId=$($script:CURRENT_USER_ID)"
+    $rr = HttpGet $redUrl @{ userId = $script:CURRENT_USER_ID }
+    $script:CURRENT_IS_REDACTOR = ($rr.exists -eq $true)
+
+    $role = if ($script:CURRENT_IS_REDACTOR) { "REDACTOR/EDITEUR" } else { "USER" }
+    Write-Host "✅ Connected as $role (userId=$($script:CURRENT_USER_ID))"
+
   } catch {
-    Write-Host "❌ Kafka produce failed => $($_.Exception.Message)"
+    Write-Host "❌ Login failed => $($_.Exception.Message)"
+    Write-Host "➡️ Vérifie les routes platform:"
+    Write-Host "   - $($env:PLATFORM_CHECK_EMAIL_PATH)"
+    Write-Host "   - $($env:PLATFORM_REDACTOR_EXISTS_PATH)"
   }
+
   Pause
 }
 
-function ActionEmitReview() {
-  $topic = ChoosePlatformJsonTopic
-  $userId  = Prompt "userId"         "user-1"
-  $gameId  = Prompt "gameId"         "game-1"
-  $rating  = Prompt "rating (int)"   "5"
-  $comment = Prompt "comment"        "Great game!"
-  $eventId = Prompt "eventId (blank = auto UUID)" ""
-  if ([string]::IsNullOrWhiteSpace($eventId)) { $eventId = [guid]::NewGuid().ToString() }
-  $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-
-  $json = @{
-    eventId = $eventId
-    eventType = "ReviewSubmitted"
-    occurredAt = $ts
-    schemaVersion = 1
-    payload = @{ userId=$userId; gameId=$gameId; rating=[int]$rating; comment=$comment }
-  } | ConvertTo-Json -Compress -Depth 8
-
-  Write-Host ""
-  Write-Host "Producing JSON to Kafka: topic=$topic key=$gameId"
-  try {
-    KafkaProduce $topic $gameId $json
-    Write-Host "✅ Produced ReviewSubmitted (eventId=$eventId)"
-  } catch {
-    Write-Host "❌ Kafka produce failed => $($_.Exception.Message)"
+function ActionPublishGame() {
+  if (-not $script:CURRENT_USER_ID) {
+    Write-Host "❌ You must login first."
+    Pause
+    return
   }
-  Pause
-}
-
-function ActionEmitIncident() {
-  $topic = ChoosePlatformJsonTopic
-  $userId  = Prompt "userId"       "user-1"
-  $gameId  = Prompt "gameId"       "game-1"
-  $desc    = Prompt "description"  "Bug on startup"
-  $eventId = Prompt "eventId (blank = auto UUID)" ""
-  if ([string]::IsNullOrWhiteSpace($eventId)) { $eventId = [guid]::NewGuid().ToString() }
-  $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-
-  $json = @{
-    eventId = $eventId
-    eventType = "IncidentReported"
-    occurredAt = $ts
-    schemaVersion = 1
-    payload = @{ userId=$userId; gameId=$gameId; description=$desc }
-  } | ConvertTo-Json -Compress -Depth 8
-
-  Write-Host ""
-  Write-Host "Producing JSON to Kafka: topic=$topic key=$gameId"
-  try {
-    KafkaProduce $topic $gameId $json
-    Write-Host "✅ Produced IncidentReported (eventId=$eventId)"
-  } catch {
-    Write-Host "❌ Kafka produce failed => $($_.Exception.Message)"
+  if (-not $script:CURRENT_IS_REDACTOR) {
+    Write-Host "❌ Current account is not a redactor/editor. Publication not allowed."
+    Pause
+    return
   }
-  Pause
-}
 
-function ActionReadNotifications() {
-  $userId = Prompt "userId" "user-1"
-  $url = "$($env:NOTIFICATION_URL)/notifications/$userId"
+  # Publisher Controller params (new schema)
+  $gameId      = Prompt "gameId" "game-200"
+  $title       = Prompt "title"  "Halo"
+  $description = Prompt "description (optional)" "Best FPS"
+  if ([string]::IsNullOrWhiteSpace($description)) { $description = $null }
+
+  $platform    = Prompt "platform (ExecPlatform enum)" "PC"
+  $genre       = Prompt "genre (GameGenre enum)" "ACTION"
+  $version     = Prompt "version" "1.0.0"
+  $priceStr    = Prompt "price (optional, double)" ""
+  $releaseDate = Prompt "releaseDate (yyyy-MM-dd)" "2026-03-01"
+
+  $qs = @{
+    gameId      = $gameId
+    title       = $title
+    platform    = $platform
+    genre       = $genre
+    idEditeur   = $script:CURRENT_USER_ID
+    version     = $version
+    releaseDate = $releaseDate
+  }
+  if ($null -ne $description) { $qs.description = $description }
+  if (-not [string]::IsNullOrWhiteSpace($priceStr)) { $qs.price = $priceStr }
+
+  $url = "$($env:PUBLISHER_URL)/publisher/publish-game"
   Write-Host ""
-  Write-Host "GET $url"
+  Write-Host "GET $url (as idEditeur=$($script:CURRENT_USER_ID))"
   try {
-    $r = Invoke-RestMethod -Method GET -Uri $url
+    $r = HttpGet $url $qs
     $r | ConvertTo-Json -Depth 10
+    Write-Host "✅ GamePublished sent & saved (gameId=$gameId)"
   } catch {
     Write-Host "❌ Request failed => $($_.Exception.Message)"
+    Write-Host "➡️ Astuce: platform/genre doivent matcher EXACTEMENT les enums (casse incluse)."
   }
+
   Pause
 }
 
@@ -356,6 +322,17 @@ function ActionTailTopic() {
   }
 }
 
+# ==========================================================
+# COMMENTED OUT FOR LATER (keep in file, hidden in menu)
+# ==========================================================
+<#
+function KafkaProduce($topic, $key, $json) { ... }
+function ActionEmitPurchase() { ... }
+function ActionEmitReview() { ... }
+function ActionEmitIncident() { ... }
+function ActionReadNotifications() { ... }
+#>
+
 # =========================
 # Main loop
 # =========================
@@ -364,16 +341,19 @@ while ($true) {
   Menu
   $choice = Read-Host "Enter choice"
   switch ($choice) {
-    "1"  { ActionHealth }
-    "2"  { ActionPublishGame }
-    "3"  { ActionRegisterUser }
-    "3b" { ActionRegisterRedactor }
-    "4"  { ActionEmitPurchase }
-    "5"  { ActionEmitReview }
-    "6"  { ActionEmitIncident }
-    "7"  { ActionReadNotifications }
-    "8"  { ActionTailTopic }
-    "9"  { ShowConfig }
+    "1"  { ActionRegisterUser }
+    "2"  { ActionRegisterRedactor }
+    "3"  { ActionLoginExisting }
+    "4"  { ActionHealth }
+    "5"  { ActionTailTopic }
+    "6"  { ShowConfig }
+    "7"  {
+      if ($script:CURRENT_USER_ID -and $script:CURRENT_IS_REDACTOR) {
+        ActionPublishGame
+      } else {
+        Write-Host "Invalid choice"; Pause
+      }
+    }
     "0"  { Write-Host "Bye 👋"; break }
     default { Write-Host "Invalid choice"; Pause }
   }

@@ -83,7 +83,7 @@ public class PublisherController {
 
         GamePublished event = GamePublished.newBuilder()
                 .setEventId(eventId)
-                .setOccurredAt(Instant.ofEpochSecond(now.toEpochMilli()))
+                .setOccurredAt(now)
                 .setSchemaVersion(1)
                 .setGameId(saved.getGameId())
                 .setName(saved.getName())
@@ -93,7 +93,7 @@ public class PublisherController {
                 .setGenres(saved.getGenre())
                 .setVersion(saved.getVersion())
                 .setPrice(saved.getPrice()) // null ok
-                .setReleaseDate(Instant.ofEpochSecond(saved.getReleaseDate().toEpochMilli()))
+                .setReleaseDate(saved.getReleaseDate())
                 .build();
 
         producer.publish(gameId, event);

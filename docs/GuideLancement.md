@@ -61,6 +61,12 @@ curl -X POST "http://localhost:8081/platform/register-redactor" \
 http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=martin%40test.com&displayName=MarcM&birth=1985-08-20&solde=250.75&individual=true
 ```
 
+### Publication de jeu par un redactor
+```bash
+http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&price=39.99&releaseDate=2025-10-10
+```
+
+
 ## Test de fonctionnement 
 http://localhost:8082/publisher/publish-game?gameId=game-1&title=bonjour&description=un%20jeu%20cool&platform=PC&genre=ACTION&idEditeur=ed-1
 ### retour 

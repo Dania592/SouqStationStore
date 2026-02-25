@@ -26,6 +26,9 @@ create_topic () {
 create_topic "souq.publisher.events" 3 1
 create_topic "souq.platform.user.events" 3 1
 create_topic "souq.platform.redactor.events" 3 1
+create_topic "souq.platform.purchase.events" 3 1
+create_topic "souq.platform.review.events" 3 1
+create_topic "souq.platform.incident.events" 3 1
 create_topic "souq.dlq.events" 1 1
 
 echo "✅ Topics created successfully"

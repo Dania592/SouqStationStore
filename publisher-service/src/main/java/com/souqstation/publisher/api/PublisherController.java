@@ -4,9 +4,11 @@ import com.souqstation.publisher.messaging.PublisherEventProducer;
 import com.souqstation.publisher.persistence.GameEntity;
 import com.souqstation.publisher.persistence.GameRepository;
 import com.souqstation.publisher.platform.PlatformClient;
+import com.souqstation.publisher.service.PatchService;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
+import com.souqstation.schemas.events.PatchPublishedEvent;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -30,236 +32,249 @@ import java.util.UUID;
 @RequestMapping("/publisher")
 public class PublisherController {
 
-    private static final Schema PATCH_PUBLISHED_SCHEMA = loadSchema("schemas/events/patch-published.avsc");
-    private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema("schemas/events/dlc-published.avsc");
+        private static final Schema PATCH_PUBLISHED_SCHEMA = loadSchema("schemas/events/patch-published.avsc");
+        private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema("schemas/events/dlc-published.avsc");
 
-    private final PublisherEventProducer producer;
-    private final GameRepository gameRepository;
-    private final PlatformClient platformClient;
+        private final PublisherEventProducer producer;
+        private final GameRepository gameRepository;
+        private final PlatformClient platformClient;
+        private final PatchService patchService;
 
-    public PublisherController(PublisherEventProducer producer,
-                               GameRepository gameRepository,
-                               PlatformClient platformClient) {
-        this.producer = producer;
-        this.gameRepository = gameRepository;
-        this.platformClient = platformClient;
-    }
-
-    @RequestMapping(value = "/publish-game", method = {RequestMethod.POST, RequestMethod.GET})
-    public ResponseEntity<Map<String, Object>> publishGame(
-            @RequestParam String gameId,
-            @RequestParam String title,
-            @RequestParam(required = false) String description,
-            @RequestParam ExecPlatform platform,
-            @RequestParam GameGenre genre,
-            @RequestParam(name = "idEditeur") String publisherId,
-            @RequestParam(defaultValue = "1") String version,
-            @RequestParam(defaultValue = "0.0") float prixInit,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releaseDate
-    ) {
-        // 1) Vérifier que le rédacteur/publisher existe
-        if (!platformClient.redactorExists(publisherId)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "REJECTED",
-                    "reason", "REDACTOR_NOT_FOUND",
-                    "publisherId", publisherId
-            ));
+        public PublisherController(
+                        PublisherEventProducer producer,
+                        GameRepository gameRepository,
+                        PlatformClient platformClient,
+                        PatchService patchService) {
+                this.producer = producer;
+                this.gameRepository = gameRepository;
+                this.platformClient = platformClient;
+                this.patchService = patchService;
         }
 
-        // 2) Vérifier que le gameId n'existe pas déjà (évite doublons)
-        if (gameRepository.existsByGameId(gameId)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "REJECTED",
-                    "reason", "GAME_ID_ALREADY_EXISTS",
-                    "gameId", gameId
-            ));
+        @RequestMapping(value = "/publish-game", method = { RequestMethod.POST, RequestMethod.GET })
+        public ResponseEntity<Map<String, Object>> publishGame(
+                        @RequestParam String gameId,
+                        @RequestParam String title,
+                        @RequestParam(required = false) String description,
+                        @RequestParam ExecPlatform platform,
+                        @RequestParam GameGenre genre,
+                        @RequestParam(name = "idEditeur") String publisherId,
+                        @RequestParam(defaultValue = "1") String version,
+                        @RequestParam(defaultValue = "0.0") float prixInit,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releaseDate) {
+                // 1) Vérifier que le rédacteur/publisher existe
+                if (!platformClient.redactorExists(publisherId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "REJECTED",
+                                        "reason", "REDACTOR_NOT_FOUND",
+                                        "publisherId", publisherId));
+                }
+
+                // 2) Vérifier que le gameId n'existe pas déjà (évite doublons)
+                if (gameRepository.existsByGameId(gameId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "REJECTED",
+                                        "reason", "GAME_ID_ALREADY_EXISTS",
+                                        "gameId", gameId));
+                }
+
+                Instant now = Instant.now();
+
+                // 3) Sauvegarder en base
+                Double price = (double) prixInit;
+                Instant releaseDateInstant = (releaseDate != null) ? releaseDate.toInstant() : now;
+
+                GameEntity saved = gameRepository.save(
+                                new GameEntity(
+                                                gameId,
+                                                title,
+                                                description,
+                                                publisherId,
+                                                platform,
+                                                genre,
+                                                version,
+                                                price,
+                                                releaseDateInstant,
+                                                now));
+
+                // 4) Publier l'event Kafka (schéma Avro)
+                String eventId = UUID.randomUUID().toString();
+
+                GamePublished event = GamePublished.newBuilder()
+                                .setEventId(eventId)
+                                .setOccurredAt(now)
+                                .setSchemaVersion(1)
+                                .setGameId(saved.getGameId())
+                                .setTitle(saved.getName())
+                                .setDescription(saved.getDescription())
+                                .setPlatformExc(saved.getPlatformExc())
+                                .setGenres(saved.getGenre())
+                                .setIdEditeur(saved.getPublisherId())
+                                .setVersion(saved.getVersion())
+                                .setPrixInit(saved.getPrice() != null ? saved.getPrice().floatValue() : 0.0f)
+                                .build();
+
+                producer.publishGame(gameId, event);
+
+                return ResponseEntity.ok(Map.ofEntries(
+                                Map.entry("status", "PUBLISHED_TO_KAFKA"),
+                                Map.entry("eventId", eventId),
+                                Map.entry("gameId", gameId),
+                                Map.entry("title", title),
+                                Map.entry("description", description),
+                                Map.entry("platform", platform.name()),
+                                Map.entry("genre", genre.name()),
+                                Map.entry("idEditeur", publisherId),
+                                Map.entry("version", version),
+                                Map.entry("prixInit", prixInit),
+                                Map.entry("occurredAt", now.toString())));
         }
 
-        Instant now = Instant.now();
+        // L'ancienne méthode publishPatch (GenericRecord) a été remplacée par la
+        // version typée dans PatchService (voir plus bas)
 
-        // 3) Sauvegarder en base
-        Double price = (double) prixInit;
-        Instant releaseDateInstant = (releaseDate != null) ? releaseDate.toInstant() : now;
+        @RequestMapping(value = "/publish-dlc", method = { RequestMethod.POST, RequestMethod.GET })
+        public ResponseEntity<Map<String, Object>> publishDlc(
+                        @RequestParam String dlcId,
+                        @RequestParam String gameId,
+                        @RequestParam String name,
+                        @RequestParam(required = false) String description,
+                        @RequestParam String publisherId,
+                        @RequestParam(defaultValue = "0.0") double price) {
+                String eventId = UUID.randomUUID().toString();
+                long nowMillis = Instant.now().toEpochMilli();
 
-        GameEntity saved = gameRepository.save(
-                new GameEntity(
-                        gameId,
-                        title,
-                        description,
-                        publisherId,
-                        platform,
-                        genre,
-                        version,
-                        price,
-                        releaseDateInstant,
-                        now
-                )
-        );
+                GenericRecord event = new GenericData.Record(DLC_PUBLISHED_SCHEMA);
+                event.put("eventId", eventId);
+                event.put("eventType", "dlc.published");
+                event.put("occurredAt", nowMillis);
+                event.put("schemaVersion", 1);
+                event.put("dlcId", dlcId);
+                event.put("gameId", gameId);
+                event.put("name", name);
+                event.put("description", description);
+                event.put("publisherId", publisherId);
+                event.put("price", price);
+                event.put("releaseDate", nowMillis);
 
-        // 4) Publier l'event Kafka (schéma Avro)
-        String eventId = UUID.randomUUID().toString();
+                producer.publishDlc(gameId, event);
 
-        GamePublished event = GamePublished.newBuilder()
-                .setEventId(eventId)
-                .setOccurredAt(now)
-                .setSchemaVersion(1)
-                .setGameId(saved.getGameId())
-                .setTitle(saved.getName())
-                .setDescription(saved.getDescription())
-                .setPlatformExc(saved.getPlatformExc())
-                .setGenres(saved.getGenre())
-                .setIdEditeur(saved.getPublisherId())
-                .setVersion(saved.getVersion())
-                .setPrixInit(saved.getPrice() != null ? saved.getPrice().floatValue() : 0.0f)
-                .build();
-
-        producer.publishGame(gameId, event);
-
-        return ResponseEntity.ok(Map.ofEntries(
-                Map.entry("status", "PUBLISHED_TO_KAFKA"),
-                Map.entry("eventId", eventId),
-                Map.entry("gameId", gameId),
-                Map.entry("title", title),
-                Map.entry("description", description),
-                Map.entry("platform", platform.name()),
-                Map.entry("genre", genre.name()),
-                Map.entry("idEditeur", publisherId),
-                Map.entry("version", version),
-                Map.entry("prixInit", prixInit),
-                Map.entry("occurredAt", now.toString())
-        ));
-    }
-
-    @RequestMapping(value = "/publish-patch", method = {RequestMethod.POST, RequestMethod.GET})
-    public ResponseEntity<Map<String, Object>> publishPatch(
-            @RequestParam String patchId,
-            @RequestParam String gameId,
-            @RequestParam String previousVersion,
-            @RequestParam String targetVersion,
-            @RequestParam(required = false) String description,
-            @RequestParam(defaultValue = "CORRECTION") String modifications
-    ) {
-        String eventId = UUID.randomUUID().toString();
-        long nowMillis = Instant.now().toEpochMilli();
-
-        GenericRecord event = new GenericData.Record(PATCH_PUBLISHED_SCHEMA);
-        event.put("eventId", eventId);
-        event.put("eventType", "patch.published");
-        event.put("occurredAt", nowMillis);
-        event.put("schemaVersion", 1);
-        event.put("patchId", patchId);
-        event.put("gameId", gameId);
-        event.put("previousVersion", previousVersion);
-        event.put("targetVersion", targetVersion);
-        event.put("description", description);
-        event.put("modifications", parseModificationTypes(modifications));
-        event.put("releasedAt", nowMillis);
-
-        producer.publishPatch(gameId, event);
-
-        return ResponseEntity.ok(Map.ofEntries(
-                Map.entry("status", "PUBLISHED_TO_KAFKA"),
-                Map.entry("eventType", "PatchPublishedEvent"),
-                Map.entry("eventId", eventId),
-                Map.entry("patchId", patchId),
-                Map.entry("gameId", gameId),
-                Map.entry("targetVersion", targetVersion)
-        ));
-    }
-
-    @RequestMapping(value = "/publish-dlc", method = {RequestMethod.POST, RequestMethod.GET})
-    public ResponseEntity<Map<String, Object>> publishDlc(
-            @RequestParam String dlcId,
-            @RequestParam String gameId,
-            @RequestParam String name,
-            @RequestParam(required = false) String description,
-            @RequestParam String publisherId,
-            @RequestParam(defaultValue = "0.0") double price
-    ) {
-        String eventId = UUID.randomUUID().toString();
-        long nowMillis = Instant.now().toEpochMilli();
-
-        GenericRecord event = new GenericData.Record(DLC_PUBLISHED_SCHEMA);
-        event.put("eventId", eventId);
-        event.put("eventType", "dlc.published");
-        event.put("occurredAt", nowMillis);
-        event.put("schemaVersion", 1);
-        event.put("dlcId", dlcId);
-        event.put("gameId", gameId);
-        event.put("name", name);
-        event.put("description", description);
-        event.put("publisherId", publisherId);
-        event.put("price", price);
-        event.put("releaseDate", nowMillis);
-
-        producer.publishDlc(gameId, event);
-
-        return ResponseEntity.ok(Map.ofEntries(
-                Map.entry("status", "PUBLISHED_TO_KAFKA"),
-                Map.entry("eventType", "DLCPublishedEvent"),
-                Map.entry("eventId", eventId),
-                Map.entry("dlcId", dlcId),
-                Map.entry("gameId", gameId),
-                Map.entry("name", name)
-        ));
-    }
-
-    private static List<GenericData.EnumSymbol> parseModificationTypes(String modificationsParam) {
-        Schema enumSchema = PATCH_PUBLISHED_SCHEMA
-                .getField("modifications")
-                .schema()
-                .getElementType();
-
-        List<GenericData.EnumSymbol> values = new ArrayList<>();
-        Arrays.stream(modificationsParam.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .forEach(rawValue -> values.add(new GenericData.EnumSymbol(enumSchema, rawValue)));
-        return values;
-    }
-
-    private static Schema loadSchema(String schemaPath) {
-        try {
-            String rawSchema = Files.readString(Path.of(schemaPath));
-            return new Schema.Parser().parse(rawSchema);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load schema: " + schemaPath, e);
-        }
-    }
-
-    @GetMapping("/games/by-publisher")
-    public ResponseEntity<?> getGamesByPublisher(
-            @RequestParam(name = "idEditeur") String publisherId
-    ) {
-        if (!platformClient.redactorExists(publisherId)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "REJECTED",
-                    "reason", "REDACTOR_NOT_FOUND",
-                    "publisherId", publisherId
-            ));
+                return ResponseEntity.ok(Map.ofEntries(
+                                Map.entry("status", "PUBLISHED_TO_KAFKA"),
+                                Map.entry("eventType", "DLCPublishedEvent"),
+                                Map.entry("eventId", eventId),
+                                Map.entry("dlcId", dlcId),
+                                Map.entry("gameId", gameId),
+                                Map.entry("name", name)));
         }
 
-        List<GameEntity> games = gameRepository.findByPublisherId(publisherId);
+        private static List<GenericData.EnumSymbol> parseModificationTypes(String modificationsParam) {
+                Schema enumSchema = PATCH_PUBLISHED_SCHEMA
+                                .getField("modifications")
+                                .schema()
+                                .getElementType();
 
-        List<Map<String, Object>> result = games.stream()
-                .map(g -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("gameId", g.getGameId());
-                    m.put("title", g.getName());
-                    m.put("platform", g.getPlatformExc().name());
-                    m.put("genre", g.getGenre().name());
-                    m.put("version", g.getVersion());
-                    m.put("price", g.getPrice());
-                    m.put("releaseDate", g.getReleaseDate());
-                    return m;
-                })
-                .toList();
+                List<GenericData.EnumSymbol> values = new ArrayList<>();
+                Arrays.stream(modificationsParam.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isBlank())
+                                .forEach(rawValue -> values.add(new GenericData.EnumSymbol(enumSchema, rawValue)));
+                return values;
+        }
 
-        return ResponseEntity.ok(result);
-    }
+        private static Schema loadSchema(String schemaPath) {
+                try {
+                        String rawSchema = Files.readString(Path.of(schemaPath));
+                        return new Schema.Parser().parse(rawSchema);
+                } catch (IOException e) {
+                        throw new IllegalStateException("Unable to load schema: " + schemaPath, e);
+                }
+        }
 
-    @GetMapping("/games/count")
-    public long countGames(@RequestParam(name = "idEditeur") String publisherId) {
-        return gameRepository.countByPublisherId(publisherId);
-    }
+        @GetMapping("/games/by-publisher")
+        public ResponseEntity<?> getGamesByPublisher(
+                        @RequestParam(name = "idEditeur") String publisherId) {
+                if (!platformClient.redactorExists(publisherId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "REJECTED",
+                                        "reason", "REDACTOR_NOT_FOUND",
+                                        "publisherId", publisherId));
+                }
+
+                List<GameEntity> games = gameRepository.findByPublisherId(publisherId);
+
+                List<Map<String, Object>> result = games.stream()
+                                .map(g -> {
+                                        Map<String, Object> m = new LinkedHashMap<>();
+                                        m.put("gameId", g.getGameId());
+                                        m.put("title", g.getName());
+                                        m.put("platform", g.getPlatformExc().name());
+                                        m.put("genre", g.getGenre().name());
+                                        m.put("version", g.getVersion());
+                                        m.put("price", g.getPrice());
+                                        m.put("releaseDate", g.getReleaseDate());
+                                        return m;
+                                })
+                                .toList();
+
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/games/count")
+        public long countGames(@RequestParam(name = "idEditeur") String publisherId) {
+                return gameRepository.countByPublisherId(publisherId);
+        }
+
+        /**
+         * Publier un patch pour un jeu
+         * POST
+         * /publisher/publish-patch?gameId=G1&targetVersion=1.1.0&description=...&modifications=CORRECTION,OPTIMISATION&releasedAt=2026-03-15
+         */
+        @PostMapping("/publish-patch")
+        public ResponseEntity<Map<String, Object>> publishPatch(
+                        @RequestParam String gameId,
+                        @RequestParam String targetVersion,
+                        @RequestParam(required = false) String description,
+                        @RequestParam List<String> modifications,
+                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releasedAt) {
+                try {
+                        PatchPublishedEvent event = patchService.publishPatch(
+                                        gameId,
+                                        targetVersion,
+                                        description,
+                                        modifications,
+                                        releasedAt.toInstant());
+
+                        return ResponseEntity.ok(Map.of(
+                                        "status", "PATCH_PUBLISHED",
+                                        "eventId", event.getEventId(),
+                                        "patchId", event.getPatchId(),
+                                        "gameId", event.getGameId(),
+                                        "previousVersion", event.getPreviousVersion(),
+                                        "targetVersion", event.getTargetVersion(),
+                                        "modifications", event.getModifications().stream()
+                                                        .map(Enum::name)
+                                                        .toList(),
+                                        "releasedAt", event.getReleasedAt().toString()));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "PATCH_REJECTED",
+                                        "reason", e.getMessage()));
+                }
+        }
+
+        /**
+         * Récupérer l'historique des patches d'un jeu
+         * GET /publisher/games/{gameId}/patches
+         */
+        @GetMapping("/games/{gameId}/patches")
+        public ResponseEntity<Map<String, Object>> getPatchesByGame(@PathVariable String gameId) {
+                List<Map<String, Object>> patches = patchService.getPatchesByGame(gameId);
+                long count = patchService.countPatchesByGame(gameId);
+
+                return ResponseEntity.ok(Map.of(
+                                "gameId", gameId,
+                                "patchCount", count,
+                                "patches", patches));
+        }
 }

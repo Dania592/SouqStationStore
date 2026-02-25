@@ -43,3 +43,6 @@ souq:
       platform:
         user: souq.platform.user.events
         redactor: souq.platform.redactor.events
+        purchase: souq.platform.purchase.events
+        review: souq.platform.review.events
+        incident: souq.platform.incident.events

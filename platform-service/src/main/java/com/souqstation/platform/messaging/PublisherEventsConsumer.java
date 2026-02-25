@@ -2,6 +2,7 @@ package com.souqstation.platform.messaging;
 
 import com.souqstation.platform.persistence.ConsumedEventEntity;
 import com.souqstation.platform.persistence.ConsumedEventRepository;
+import com.souqstation.platform.service.CatalogService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -14,9 +15,14 @@ import java.time.Instant;
 public class PublisherEventsConsumer {
 
     private final ConsumedEventRepository consumedEventRepository;
+    private final CatalogService catalogService;
 
-    public PublisherEventsConsumer(ConsumedEventRepository consumedEventRepository) {
+    public PublisherEventsConsumer(
+            ConsumedEventRepository consumedEventRepository,
+            CatalogService catalogService
+    ) {
         this.consumedEventRepository = consumedEventRepository;
+        this.catalogService = catalogService;
     }
 
     @KafkaListener(topics = "${souq.topics.publisher}")
@@ -40,7 +46,10 @@ public class PublisherEventsConsumer {
                 new ConsumedEventEntity(eventId, eventType, occurredAt, Instant.now())
         );
 
-        // 3) Log business
+        // 3) Traitement métier : Ajouter au catalogue
+        catalogService.addGameToCatalog(event);
+
+        // 4) Log business
         System.out.println("[PLATFORM] processed key=" + record.key()
                 + " type=" + eventType
                 + " eventId=" + eventId

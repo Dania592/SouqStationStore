@@ -1,0 +1,75 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.schemas.events",
+  "name": "ReviewSubmittedEvent",
+  "doc": "Événement : Évaluation soumise par un utilisateur",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "review.submitted",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "reviewId",
+      "type": "string",
+      "doc": "Identifiant unique de l'évaluation"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant du jeu évalué"
+    },
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant de l'utilisateur qui évalue"
+    },
+    {
+      "name": "pseudo",
+      "type": "string",
+      "doc": "Pseudo de l'utilisateur"
+    },
+    {
+      "name": "note",
+      "type": "int",
+      "doc": "Note donnée (0-10)"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Texte de l'évaluation"
+    },
+    {
+      "name": "submittedAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de soumission"
+    }
+  ]
+}

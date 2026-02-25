@@ -1,0 +1,87 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.schemas.events",
+  "name": "PatchPublishedEvent",
+  "doc": "Événement : Correctif publié",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "patch.published",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "patchId",
+      "type": "string",
+      "doc": "Identifiant unique du patch"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant du jeu concerné"
+    },
+    {
+      "name": "previousVersion",
+      "type": "string",
+      "doc": "Version précédente"
+    },
+    {
+      "name": "targetVersion",
+      "type": "string",
+      "doc": "Nouvelle version"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description des changements"
+    },
+    {
+      "name": "modifications",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "namespace": "com.souqstation.schemas.events.enums",
+          "name": "ModificationType",
+          "symbols": [
+            "CORRECTION",
+            "AJOUT",
+            "OPTIMISATION"
+          ]
+        }
+      },
+      "doc": "Types de modifications"
+    },
+    {
+      "name": "releasedAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie du patch"
+    }
+  ]
+}

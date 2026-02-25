@@ -105,13 +105,13 @@ public class PublisherController {
                                 .setOccurredAt(now)
                                 .setSchemaVersion(1)
                                 .setGameId(saved.getGameId())
-                                .setTitle(saved.getName())
+                                .setName(saved.getName())
                                 .setDescription(saved.getDescription())
                                 .setPlatformExc(saved.getPlatformExc())
                                 .setGenres(saved.getGenre())
-                                .setIdEditeur(saved.getPublisherId())
+                                .setPublisherId(saved.getPublisherId())
                                 .setVersion(saved.getVersion())
-                                .setPrixInit(saved.getPrice() != null ? saved.getPrice().floatValue() : 0.0f)
+                                .setPrice(saved.getPrice())
                                 .build();
 
                 producer.publishGame(gameId, event);

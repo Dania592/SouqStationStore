@@ -44,8 +44,7 @@ public class CatalogService {
                 event.getVersion(),
                 event.getPrice(),
                 event.getReleaseDate(),
-                Instant.now()
-        );
+                Instant.now());
 
         gameCatalogRepository.save(catalogEntry);
 
@@ -110,18 +109,17 @@ public class CatalogService {
     }
 
     private Map<String, Object> convertToMap(GameCatalogEntity game) {
-        return Map.of(
-                "gameId", game.getGameId(),
-                "name", game.getName(),
-                "description", game.getDescription() != null ? game.getDescription() : "",
-                "publisherId", game.getPublisherId(),
-                "platform", game.getPlatformExc().name(),
-                "genre", game.getGenre().name(),
-                "version", game.getVersion(),
-                "price", game.getPrice() != null ? game.getPrice() : 0.0,
-                "releaseDate", game.getReleaseDate().toString(),
-                "addedAt", game.getAddedAt().toString(),
-                "updatedAt", game.getUpdatedAt().toString()
-        );
+        return Map.ofEntries(
+                Map.entry("gameId", game.getGameId()),
+                Map.entry("name", game.getName()),
+                Map.entry("description", game.getDescription() != null ? game.getDescription() : ""),
+                Map.entry("publisherId", game.getPublisherId()),
+                Map.entry("platform", game.getPlatformExc().name()),
+                Map.entry("genre", game.getGenre().name()),
+                Map.entry("version", game.getVersion()),
+                Map.entry("price", game.getPrice() != null ? game.getPrice() : 0.0),
+                Map.entry("releaseDate", game.getReleaseDate().toString()),
+                Map.entry("addedAt", game.getAddedAt().toString()),
+                Map.entry("updatedAt", game.getUpdatedAt().toString()));
     }
 }

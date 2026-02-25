@@ -1,0 +1,70 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.schemas.models",
+  "name": "Patch",
+  "doc": "Modèle de correctif/mise à jour",
+  "fields": [
+    {
+      "name": "patchId",
+      "type": "string",
+      "doc": "Identifiant unique du patch"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant du jeu concerné"
+    },
+    {
+      "name": "previousVersion",
+      "type": "string",
+      "doc": "Version précédente (ex: 1.0.0)"
+    },
+    {
+      "name": "targetVersion",
+      "type": "string",
+      "doc": "Nouvelle version (ex: 1.0.1)"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description du patch"
+    },
+    {
+      "name": "modifications",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "namespace": "com.souqstation.schemas.models.enums",
+          "name": "ModificationType",
+          "symbols": [
+            "CORRECTION",
+            "AJOUT",
+            "OPTIMISATION"
+          ]
+        }
+      },
+      "doc": "Types de modifications apportées"
+    },
+    {
+      "name": "releasedAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie du patch"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date d'enregistrement"
+    }
+  ]
+}

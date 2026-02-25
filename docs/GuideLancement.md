@@ -63,10 +63,67 @@ http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=m
 
 ### Publication de jeu par un redactor
 ```bash
-http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&price=39.99&releaseDate=2025-10-10
+http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&prixInit=39.99&releaseDate=2025-10-10
 ```
 
 ### Follow d'un utilisateur à un autre  
 ```bash
 http://localhost:8081/platform/users/follow?userId=U100&followedId=U200
+```
+
+### Achat d'un jeu
+```bash
+curl -X POST "http://localhost:8081/platform/purchases/game" \
+-d "userId=U100" \
+-d "gameId=G300"
+```
+
+### Consultation de la bibliothèque d'un utilisateur
+```bash
+curl "http://localhost:8081/platform/purchases/library?userId=U100"
+```
+
+### Dépôt d'un avis (Review) sur un jeu
+```bash
+curl -X POST "http://localhost:8081/platform/reviews/submit" \
+-d "userId=U100" \
+-d "gameId=G300" \
+-d "note=9" \
+-d "description=Incroyable !"
+```
+
+### Noter l'avis d'un autre utilisateur comme utile (Rate)
+*(Remplacer `REVIEW_ID` par l'ID réel généré par la commande précédente)*
+```bash
+curl -X POST "http://localhost:8081/platform/reviews/REVIEW_ID/rate" \
+-d "userId=U200" \
+-d "isHelpful=true"
+```
+
+### Signalement d'un bug / incident en jeu
+Les options de gravité (`severity`) valides : `CRITIQUE`, `HAUTE`, `NORMALE`, `BASSE`.
+```bash
+curl -X POST "http://localhost:8081/platform/incidents/report" \
+-d "userId=U100" \
+-d "gameId=G300" \
+-d "severity=HAUTE" \
+-d "description=Crashs%20intempestifs" \
+-d "environment=Windows%2011"
+```
+
+### Publication d'un patch par l'éditeur
+Les options de modifications (`modifications`) valides : `CORRECTION`, `AJOUT`, `OPTIMISATION`.
+```bash
+curl -X POST "http://localhost:8082/publisher/publish-patch" \
+-d "gameId=G300" \
+-d "targetVersion=1.0.1" \
+-d "patchNotes=Correction%20du%20crash%20sous%20Windows%2011" \
+-d "releasedAt=2025-11-20" \
+--data-urlencode "modifications=CORRECTION" \
+--data-urlencode "modifications=OPTIMISATION"
+```
+
+### Vérifier le statut du jeu modifié (sur la plateforme)
+```bash
+curl "http://localhost:8081/platform/catalog/games/G300"
 ```

@@ -8,6 +8,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 import com.souqstation.schemas.events.GamePublished;
+import com.souqstation.schemas.events.PatchPublishedEvent;
 
 import java.time.Instant;
 
@@ -19,8 +20,7 @@ public class PublisherEventsConsumer {
 
     public PublisherEventsConsumer(
             ConsumedEventRepository consumedEventRepository,
-            CatalogService catalogService
-    ) {
+            CatalogService catalogService) {
         this.consumedEventRepository = consumedEventRepository;
         this.catalogService = catalogService;
     }
@@ -43,8 +43,7 @@ public class PublisherEventsConsumer {
 
         // 2) Save processed marker (+ metadata)
         consumedEventRepository.save(
-                new ConsumedEventEntity(eventId, eventType, occurredAt, Instant.now())
-        );
+                new ConsumedEventEntity(eventId, eventType, occurredAt, Instant.now()));
 
         // 3) Traitement métier : Ajouter au catalogue
         catalogService.addGameToCatalog(event);
@@ -56,6 +55,26 @@ public class PublisherEventsConsumer {
                 + " gameId=" + event.getGameId()
                 + " title=" + event.getName());
 
+        ack.acknowledge();
+    }
+
+    @KafkaListener(topics = "${souq.topics.publisher-patch:souq.publisher.patch.events}")
+    public void onPatchEvent(ConsumerRecord<String, PatchPublishedEvent> record, Acknowledgment ack) {
+        PatchPublishedEvent event = record.value();
+        String eventId = event.getEventId();
+
+        if (consumedEventRepository.existsById(eventId)) {
+            ack.acknowledge();
+            return;
+        }
+
+        consumedEventRepository.save(
+                new ConsumedEventEntity(eventId, event.getSchema().getName(), event.getOccurredAt(), Instant.now()));
+
+        catalogService.updateGameVersion(event.getGameId(), event.getTargetVersion());
+
+        System.out.println("[PLATFORM] processed patch for gameId=" + event.getGameId() + " -> newVersion="
+                + event.getTargetVersion());
         ack.acknowledge();
     }
 }

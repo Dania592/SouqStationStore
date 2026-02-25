@@ -1,5 +1,8 @@
 server:
   port: 8081
+  error:
+    include-message: always
+    include-stacktrace: always
 
 spring:
   application:
@@ -32,12 +35,14 @@ spring:
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       properties:
         schema.registry.url: http://localhost:8085
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
     listener:
       ack-mode: manual
 
 souq:
   topics:
     publisher: souq.publisher.events
+    publisher-patch: souq.publisher.patch.events
   kafka:
     topics:
       platform:
@@ -45,4 +50,5 @@ souq:
         redactor: souq.platform.redactor.events
         purchase: souq.platform.purchase.events
         review: souq.platform.review.events
+        review-rated: souq.platform.review-rated.events
         incident: souq.platform.incident.events

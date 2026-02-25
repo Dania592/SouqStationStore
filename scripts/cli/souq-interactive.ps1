@@ -17,7 +17,7 @@ $script:CURRENT_ROLE = "NONE"  # NONE | USER | REDACTOR
 # =========================
 # Utils
 # =========================
-function Pause { Read-Host "Press Enter..." | Out-Null }
+function Pause { Read-Host "Appuyez sur Entrée..." | Out-Null }
 
 function Banner {
   Clear-Host
@@ -25,9 +25,9 @@ function Banner {
   Write-Host "     SouqStation Interactive CLI"
   Write-Host "====================================="
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "Not connected"
+    Write-Host "Non connecté"
   } else {
-    Write-Host ("Connected as: {0} [{1}] (userId={2})" -f $script:CURRENT_EMAIL, $script:CURRENT_ROLE, $script:CURRENT_USER_ID)
+    Write-Host ("Connecté en tant que: {0} [{1}] (userId={2})" -f $script:CURRENT_EMAIL, $script:CURRENT_ROLE, $script:CURRENT_USER_ID)
   }
   Write-Host "-------------------------------------"
 }
@@ -46,7 +46,7 @@ function HttpPostForm([string]$url, [hashtable]$body) {
 }
 
 function ShowHttpError($err) {
-  Write-Host ("❌ HTTP Error: {0}" -f $err.Exception.Message)
+  Write-Host ("HTTP Error: {0}" -f $err.Exception.Message)
   if ($err.Exception.Response) {
     try {
       $reader = New-Object System.IO.StreamReader($err.Exception.Response.GetResponseStream())
@@ -64,18 +64,18 @@ function ShowHttpError($err) {
 # =========================
 function ActionRegisterUser {
   $form = @{
-    userId      = Prompt "userId" "user-1"
-    name        = Prompt "name" "John Doe"
+    userId      = Prompt "ID_Utilisateur" "user-1"
+    name        = Prompt "nom" "John Doe"
     email       = Prompt "email" "user@test.com"
-    displayName = Prompt "displayName" "JohnD"
-    birth       = Prompt "birth yyyy-MM-dd" "1990-01-01"
+    displayName = Prompt "pseudo" "JohnD"
+    birth       = Prompt "Date de naissance (AAAA-MM-JJ)" "1990-01-01"
     solde       = Prompt "solde" "0.0"
   }
 
   try {
     $r = HttpPostForm "$($env:PLATFORM_URL)/platform/register-user" $form
     $r | ConvertTo-Json -Depth 10
-    Write-Host "✅ User created"
+    Write-Host "Utilisateur créé"
   } catch {
     ShowHttpError $_
   }
@@ -86,18 +86,18 @@ function ActionRegisterUser {
 function ActionRegisterRedactor {
   $form = @{
     userId      = Prompt "userId" "redactor-1"
-    name        = Prompt "name" "Jane Doe"
+    name        = Prompt "nom" "Jane Doe"
     email       = Prompt "email" "redactor@test.com"
-    displayName = Prompt "displayName" "JaneD"
-    birth       = Prompt "birth yyyy-MM-dd" "1985-01-01"
+    displayName = Prompt "pseudo" "JaneD"
+    birth       = Prompt "Date de naissance (AAAA-MM-JJ)" "1985-01-01"
     solde       = Prompt "solde" "0.0"
-    individual  = Prompt "individual true/false" "true"
+    individual  = Prompt "Particulier (true/false)" "true"
   }
 
   try {
     $r = HttpPostForm "$($env:PLATFORM_URL)/platform/register-redactor" $form
     $r | ConvertTo-Json -Depth 10
-    Write-Host "✅ Redactor created"
+    Write-Host "Éditeur créé"
   } catch {
     ShowHttpError $_
   }
@@ -106,9 +106,9 @@ function ActionRegisterRedactor {
 }
 
 # =========================
-# Login / Logout
+# Connexion / Déconnexion
 # =========================
-function Login {
+function Connexion {
   $email = Prompt "email" "redactor@test.com"
 
   try {
@@ -116,7 +116,7 @@ function Login {
     $r = Invoke-RestMethod -Method GET -Uri $checkUrl
 
     if (-not $r.exists) {
-      Write-Host "❌ User not found"
+      Write-Host "Utilisateur introuvable"
       Pause
       return
     }
@@ -129,7 +129,7 @@ function Login {
 
     if ($rr.exists -eq $true) {
       $script:CURRENT_ROLE = "REDACTOR"
-      Write-Host "✅ Welcome editor"
+      Write-Host "Bienvenue éditeur"
       # UX count (optional)
       try {
         $countUrl = "$($env:PUBLISHER_URL)/publisher/games/count?idEditeur=$($script:CURRENT_USER_ID)"
@@ -138,7 +138,7 @@ function Login {
       } catch {}
     } else {
       $script:CURRENT_ROLE = "USER"
-      Write-Host "✅ Welcome user"
+      Write-Host "Bienvenue utilisateur"
     }
   } catch {
     ShowHttpError $_
@@ -147,11 +147,11 @@ function Login {
   Pause
 }
 
-function Logout {
+function Déconnexion {
   $script:CURRENT_EMAIL = $null
   $script:CURRENT_USER_ID = $null
   $script:CURRENT_ROLE = "NONE"
-  Write-Host "✅ Logged out"
+  Write-Host "Déconnecté"
   Pause
 }
 
@@ -160,15 +160,15 @@ function Logout {
 # =========================
 function FollowUser {
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "❌ Please login first."
+    Write-Host "Veuillez d'abord vous connecter."
     Pause
     return
   }
 
-  $followedId = Prompt "followedId (user to follow)" "U200"
+  $followedId = Prompt "ID de l'utilisateur à suivre" "U200"
 
   if ($followedId -eq $script:CURRENT_USER_ID) {
-    Write-Host "❌ You cannot follow yourself."
+    Write-Host "Vous ne pouvez pas vous suivre vous-même."
     Pause
     return
   }
@@ -177,7 +177,7 @@ function FollowUser {
     $url = "$($env:PLATFORM_URL)/platform/users/follow"
     $r = HttpPostForm $url @{ userId = $script:CURRENT_USER_ID; followedId = $followedId }
     $r | ConvertTo-Json -Depth 10
-    Write-Host ("✅ Now following {0}" -f $followedId)
+    Write-Host ("Vous suivez maintenant {0}" -f $followedId)
   } catch {
     ShowHttpError $_
   }
@@ -187,7 +187,7 @@ function FollowUser {
 
 function ShowFollowing {
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "❌ Please login first."
+    Write-Host "Veuillez d'abord vous connecter."
     Pause
     return
   }
@@ -197,14 +197,14 @@ function ShowFollowing {
     $r = Invoke-RestMethod -Method GET -Uri $url
 
     if ($null -eq $r -or $r.Count -eq 0) {
-      Write-Host "No following yet."
+      Write-Host "Aucun abonnement pour le moment."
     } else {
       Write-Host ""
-      Write-Host "Following:"
+      Write-Host "Abonnements:"
       foreach ($u in $r) {
         Write-Host "----------------------"
         Write-Host ("userId: {0}" -f $u.userId)
-        if ($u.displayName) { Write-Host ("displayName: {0}" -f $u.displayName) }
+        if ($u.displayName) { Write-Host ("displayNom: {0}" -f $u.displayName) }
       }
     }
   } catch {
@@ -219,30 +219,30 @@ function ShowFollowing {
 # =========================
 function PublishGame {
   if ($script:CURRENT_ROLE -ne "REDACTOR") {
-    Write-Host "❌ Publish is only for REDACTOR."
+    Write-Host "La publication est réservée aux ÉDITEURS."
     Pause
     return
   }
 
   $form = @{
-    gameId      = Prompt "gameId" "game-100"
-    title       = Prompt "title" "Halo"
+    gameId      = Prompt "ID_Jeu" "game-100"
+    title       = Prompt "titre" "Halo"
     description = Prompt "description" ""
-    platform    = (Prompt "platform" "PC").ToUpper()
+    platform    = (Prompt "plateforme" "PC").ToUpper()
     genre       = (Prompt "genre" "ACTION").ToUpper()
     idEditeur   = $script:CURRENT_USER_ID
     version     = Prompt "version" "1.0.0"
-    releaseDate = Prompt "releaseDate yyyy-MM-dd" "2026-01-01"
+    releaseDate = Prompt "Date de sortie (AAAA-MM-JJ)" "2026-01-01"
   }
 
-  $price = Prompt "price optional" ""
+  $price = Prompt "prix initial (optionnel)" ""
   if ($price -ne "") { $form.price = $price }
 
   try {
     $url = "$($env:PUBLISHER_URL)/publisher/publish-game"
     $r = HttpPostForm $url $form
     $r | ConvertTo-Json -Depth 10
-    Write-Host "✅ Game published"
+    Write-Host "Game published"
   } catch {
     ShowHttpError $_
   }
@@ -252,7 +252,7 @@ function PublishGame {
 
 function MyGames {
   if ($script:CURRENT_ROLE -ne "REDACTOR") {
-    Write-Host "❌ My games is only for REDACTOR."
+    Write-Host "Mes jeux is only for REDACTOR."
     Pause
     return
   }
@@ -262,12 +262,12 @@ function MyGames {
     $games = Invoke-RestMethod -Method GET -Uri $url
 
     if ($null -eq $games -or $games.Count -eq 0) {
-      Write-Host "No games yet"
+      Write-Host "Aucun jeu pour l'instant"
     } else {
       foreach ($g in $games) {
         Write-Host "----------------------"
         Write-Host ("{0} ({1})" -f $g.title, $g.gameId)
-        Write-Host ("Platform: {0}" -f $g.platform)
+        Write-Host ("Plateforme: {0}" -f $g.platform)
         Write-Host ("Genre: {0}" -f $g.genre)
         Write-Host ("Version: {0}" -f $g.version)
       }
@@ -281,12 +281,12 @@ function MyGames {
 function FollowRedactor {
 
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "Login first"
+    Write-Host "Connexion first"
     Pause
     return
   }
 
-  $redactorId = Prompt "Redactor ID to follow" "redactor-1"
+  $redactorId = Prompt "ID de l'éditeur à suivre" "redactor-1"
 
   try {
     $url = "$($env:PLATFORM_URL)/platform/users/follow-redactor"
@@ -295,7 +295,7 @@ function FollowRedactor {
       redactorId = $redactorId
     } | ConvertTo-Json -Depth 10
 
-    Write-Host "Followed editor $redactorId"
+    Write-Host "Éditeur suivi $redactorId"
   }
   catch {
     ShowHttpError $_
@@ -306,7 +306,7 @@ function FollowRedactor {
 function ShowGamesOfFollowedEditor {
 
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "❌ Login first"
+    Write-Host "Connexion first"
     Pause
     return
   }
@@ -322,13 +322,13 @@ function ShowGamesOfFollowedEditor {
   }
 
   if ($null -eq $editors -or $editors.Count -eq 0) {
-    Write-Host "You don't follow any editor yet."
+    Write-Host "Vous ne suivez encore aucun éditeur."
     Pause
     return
   }
 
   Write-Host ""
-  Write-Host "Editors you follow:"
+  Write-Host "Éditeurs que vous suivez:"
   $i = 1
   foreach ($e in $editors) {
     Write-Host ("{0}) {1} ({2})" -f $i, $e.displayName, $e.userId)
@@ -336,13 +336,13 @@ function ShowGamesOfFollowedEditor {
   }
 
   # 2) choisir un éditeur (par index ou id)
-  $choice = Prompt "Choose editor number OR type editorId" "1"
+  $choice = Prompt "Entrez le numéro ou l'ID de l'éditeur" "1"
   $editorId = $null
 
   if ($choice -match '^\d+$') {
     $idx = [int]$choice
     if ($idx -lt 1 -or $idx -gt $editors.Count) {
-      Write-Host "❌ Invalid number"
+      Write-Host "Numéro invalide"
       Pause
       return
     }
@@ -362,10 +362,10 @@ function ShowGamesOfFollowedEditor {
   }
 
   Write-Host ""
-  Write-Host ("Games published by {0}:" -f $editorId)
+  Write-Host ("Jeux publiés par {0}:" -f $editorId)
 
   if ($null -eq $games -or $games.Count -eq 0) {
-    Write-Host "No games found."
+    Write-Host "Aucun jeu trouvé."
     Pause
     return
   }
@@ -373,11 +373,11 @@ function ShowGamesOfFollowedEditor {
   foreach ($g in $games) {
     Write-Host "----------------------"
     Write-Host ("{0} ({1})" -f $g.title, $g.gameId)
-    Write-Host ("Platform: {0}" -f $g.platform)
+    Write-Host ("Plateforme: {0}" -f $g.platform)
     Write-Host ("Genre: {0}" -f $g.genre)
     Write-Host ("Version: {0}" -f $g.version)
-    if ($g.price -ne $null) { Write-Host ("Price: {0}" -f $g.price) }
-    if ($g.releaseDate -ne $null) { Write-Host ("ReleaseDate: {0}" -f $g.releaseDate) }
+    if ($g.price -ne $null) { Write-Host ("Prix: {0}" -f $g.price) }
+    if ($g.releaseDate -ne $null) { Write-Host ("Date de sortie: {0}" -f $g.releaseDate) }
   }
 
   Pause
@@ -385,7 +385,7 @@ function ShowGamesOfFollowedEditor {
 function ShowFollowedRedactors {
 
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "Login first"
+    Write-Host "Connexion first"
     Pause
     return
   }
@@ -395,14 +395,14 @@ function ShowFollowedRedactors {
     $r = Invoke-RestMethod -Method GET -Uri $url
 
     if ($r.Count -eq 0) {
-      Write-Host "No followed editors"
+      Write-Host "Aucun éditeur suivi"
     }
     else {
-      Write-Host "Editors you follow:"
+      Write-Host "Éditeurs que vous suivez:"
       foreach ($u in $r) {
         Write-Host "----------------"
         Write-Host "Id: $($u.userId)"
-        Write-Host "Name: $($u.displayName)"
+        Write-Host "Nom: $($u.displayName)"
       }
     }
   }
@@ -419,28 +419,28 @@ function ShowFollowedRedactors {
 function Menu {
 
   if ($script:CURRENT_ROLE -eq "NONE") {
-    Write-Host "1) Register user"
-    Write-Host "2) Register redactor"
-    Write-Host "3) Login"
-    Write-Host "0) Exit"
+    Write-Host "1) Créer un utilisateur (User)"
+    Write-Host "2) Créer un éditeur (Redactor)"
+    Write-Host "3) Connexion"
+    Write-Host "0) Quitter"
     return
   }
 
   # USER et REDACTOR → social toujours visible
-  Write-Host "1) Follow user"
-  Write-Host "2) Show following"
-  Write-Host "3) Follow editor"
-  Write-Host "4) Show followed editors"
-  Write-Host "5) Show games of a followed editor"
+  Write-Host "1) Suivre un utilisateur"
+  Write-Host "2) Afficher les abonnements (Users)"
+  Write-Host "3) Suivre un éditeur"
+  Write-Host "4) Afficher les éditeurs suivis"
+  Write-Host "5) Voir les jeux d'un éditeur suivi"
 
   if ($script:CURRENT_ROLE -eq "REDACTOR") {
-    Write-Host "6) Publish game"
-    Write-Host "7) My games"
-    Write-Host "8) Logout"
+    Write-Host "6) Publier un jeu"
+    Write-Host "7) Mes jeux"
+    Write-Host "8) Déconnexion"
   } else {
-    Write-Host "6) Logout"
+    Write-Host "6) Déconnexion"
   }
-  Write-Host "0) Exit"
+  Write-Host "0) Quitter"
 }
 
 # =========================
@@ -450,7 +450,7 @@ while ($true) {
 
   Banner
   Menu
-  $c = Read-Host "Choice"
+  $c = Read-Host "Choix"
 
   # =====================
   # NON CONNECTÉ
@@ -459,9 +459,9 @@ while ($true) {
 
     if ($c -eq "1") { ActionRegisterUser }
     elseif ($c -eq "2") { ActionRegisterRedactor }
-    elseif ($c -eq "3") { Login }
+    elseif ($c -eq "3") { Connexion }
     elseif ($c -eq "0") { break }
-    else { Write-Host "Invalid choice"; Pause }
+    else { Write-Host "Choix invalide"; Pause }
 
     continue
   }
@@ -509,20 +509,20 @@ while ($true) {
     }
 
     if ($c -eq "7") {
-      Logout
+      Déconnexion
       continue
     }
   }
   else {
     # USER logout
     if ($c -eq "5") {
-      Logout
+      Déconnexion
       continue
     }
   }
 
   if ($c -eq "0") { break }
 
-  Write-Host "Invalid choice"
+  Write-Host "Choix invalide"
   Pause
 }

@@ -16,9 +16,9 @@ Le projet s’inscrit dans le cadre des modules **Langages de la JVM** et **Ing�
 
 Voir le fichier : docs/GuideLancement.md
 
-## Etat Actuel (Fevrier 2026)
+## Etat Actuel (Février 2026)
 
-L'infrastructure est operationnelle et les flux d'evenements principaux ont été validés. Les trois services Spring Boot sont en cours d'execution et communiquent via Kafka.
+L'infrastructure est opérationnelle et les flux d'événements principaux ont été validés. Le problème critique de conflit de schémas Avro (Erreur 409 Schema Registry) a été résolu en adoptant une stratégie `RecordNameStrategy` couplée à une ségrégation des topics par domaine (Patchs séparés des Jeux, Avis évalués séparés des Dépôts d'avis). La persistance fonctionne corrèctement sur la PostgreSQL de Platform Service.
 
 ### Services Operationnels
 
@@ -50,53 +50,17 @@ sudo ./scripts/cli/souq.sh event purchase user-1 game-1
 curl http://localhost:8083/notifications/user-1
 ```
 
-### Commandes curl de test local
+### Guide des Commandes Curl HTTP
 
-> Prérequis : services démarrés (`platform-service` 8081, `publisher-service` 8082, `notification-service` 8083).
+> **Important** : L'ensemble des appels HTTP (Création compte, Achat, Signalement, Ajout Patch...) se trouvent désormais regroupés dans :
+> 👉 **`docs/GuideLancement.md`**
 
-```bash
-# 1) Publier un jeu (Publisher -> souq.publisher.events)
-curl -G "http://localhost:8082/publisher/publish-game" \
-  --data-urlencode "gameId=game-1" \
-  --data-urlencode "title=Halo" \
-  --data-urlencode "description=FPS sci-fi" \
-  --data-urlencode "platform=PC" \
-  --data-urlencode "genre=ACTION" \
-  --data-urlencode "idEditeur=pub-1" \
-  --data-urlencode "version=1.0.0" \
-  --data-urlencode "prixInit=49.99"
+### Modifications Réalisées Récemment
 
-# 2) Publier un patch
-curl -G "http://localhost:8082/publisher/publish-patch" \
-  --data-urlencode "patchId=patch-1" \
-  --data-urlencode "gameId=game-1" \
-  --data-urlencode "previousVersion=1.0.0" \
-  --data-urlencode "targetVersion=1.0.1" \
-  --data-urlencode "description=Crash fix + perf" \
-  --data-urlencode "modifications=CORRECTION,OPTIMISATION"
-
-# 3) Publier un DLC
-curl -G "http://localhost:8082/publisher/publish-dlc" \
-  --data-urlencode "dlcId=dlc-1" \
-  --data-urlencode "gameId=game-1" \
-  --data-urlencode "name=New Maps Pack" \
-  --data-urlencode "description=3 nouvelles cartes" \
-  --data-urlencode "publisherId=pub-1" \
-  --data-urlencode "price=9.99"
-
-# 4) Créer un user (Platform)
-curl -G "http://localhost:8081/platform/users/register" \
-  --data-urlencode "userId=user-1" \
-  --data-urlencode "email=user1@test.com" \
-  --data-urlencode "displayName=User1"
-
-# 5) Vérifier les notifications (Notification)
-curl "http://localhost:8083/notifications/user-1"
-```
-
-### Modifications Realisees (12 Fevrier 2026)
-
-J'ai retire la dependance invalide dans settings.gradle qui ne servait a rien. J'ai mis a jour Spring Boot de 3.3.2 vers 3.4.2 pour avoir une compatibilite avec le JDK sans casser la configuration generale du projet. J'ai aussi corrige la serialisation dans PublisherEventProducer pour qu'il envoie du JSON, comme les autres producers.
+- **Ajustement Kafka & Avro** : Configuration de `io.confluent.kafka.serializers.subject.RecordNameStrategy` pour permettre le mulitplexage d'événements sur certains topics.
+- **Création de Nouveaux Topics** : L'enfer du Subject Name a été réglé en isolant les `PatchPublishedEvent` et `ReviewRatedEvent` dans leurs propres topics dédiés (dans Publisher et Platform).
+- **Correctifs Applicatifs** : Correction d'une NullPointerException dans `PublisherController` et ajout des paramètres manquants aux appels de base de données.
+- **Mise à jour Spring Boot** : De 3.3.2 vers 3.4.2 pour la compatibilité JDK.
 
 ## Structure proposée V1
 
@@ -304,22 +268,34 @@ scripts/
 ├── register-schemas.sh
 └── load-test-data.sh
 
-## Topics Kafka recommandés :
+## Topics Kafka recommandés & implémentés :
 
-- souq.publisher.events : tout ce que publie l’éditeur (jeux + patchs)
-- souq.platform.events : tout ce que publie la plateforme (users + achats + reviews + incidents)
-- souq.notification.events : sorties finales de notifications
+Pour éviter les limitations du Schema Registry, les topics ont été éclatés de la manière suivante :
 
-## clés Kafka V0
+**Publisher (`publisher-service`)**
+- `souq.publisher.events` : jeux publiés (GamePublished) & DLC
+- `souq.publisher.patch.events` : patchs et mises à jour isolées
 
-**souq.publisher.events** (GamePublished, PatchPublished)
-key = gameId
+**Platform (`platform-service`)**
+- `souq.platform.user.events` : inscriptions
+- `souq.platform.redactor.events` : éditeurs
+- `souq.platform.purchase.events` : achats
+- `souq.platform.review.events` : dépôt d'avis originaux
+- `souq.platform.review-rated.events` : avis notés utiles/inutiles
+- `souq.platform.incident.events` : rapports de bugs
 
-**souq.platform.events**
-UserRegistered → key = userId
-GamePurchased → key = userId (histoire achat par user)
-ReviewSubmitted → key = gameId (agrégation par jeu)
-IncidentReported → key = gameId (suivi incident par jeu)
+**Notification (`notification-service`)**
+- `souq.notification.events` : sorties finales de notifications aux joueurs
 
-**souq.notification.events** (UserNotification)
-key = userId
+## clés Kafka V0 recommandées
+
+**Secteur Publisher**
+`GamePublished`, `PatchPublished` → key = `gameId`
+
+**Secteur Platform**
+`UserRegistered` → key = `userId`
+`GamePurchased` → key = `userId` *(histoire d'achat)*
+`ReviewSubmitted`, `IncidentReported` → key = `gameId` *(agrégation par jeu)*
+
+**Secteur Notification**
+`UserNotification` → key = `userId`

@@ -1,5 +1,8 @@
 server:
   port: 8082
+  error:
+    include-message: always
+    include-stacktrace: always
 
 spring:
   application:
@@ -41,5 +44,9 @@ souq:
   topics:
     publisher: souq.publisher.events
     platform: souq.platform.events
+  kafka:
+    topics:
+      publisher:
+        patch: souq.publisher.patch.events
   platform:
     url: http://localhost:8081

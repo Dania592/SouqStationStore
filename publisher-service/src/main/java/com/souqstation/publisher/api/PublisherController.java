@@ -32,7 +32,8 @@ import java.util.UUID;
 @RequestMapping("/publisher")
 public class PublisherController {
 
-        private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema("schemas/events/dlc-published.avsc");
+        private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema(
+                        "../schemas/src/main/avro/events/dlc-published.avsc");
 
         private final PublisherEventProducer producer;
         private final GameRepository gameRepository;
@@ -111,6 +112,7 @@ public class PublisherController {
                                 .setPublisherId(saved.getPublisherId())
                                 .setVersion(saved.getVersion())
                                 .setPrice(saved.getPrice())
+                                .setReleaseDate(releaseDateInstant)
                                 .build();
 
                 producer.publishGame(gameId, event);

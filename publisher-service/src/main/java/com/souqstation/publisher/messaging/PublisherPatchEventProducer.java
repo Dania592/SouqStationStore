@@ -14,8 +14,7 @@ public class PublisherPatchEventProducer {
 
     public PublisherPatchEventProducer(
             KafkaTemplate<String, PatchPublishedEvent> patchTemplate,
-            @Value("${souq.topics.publisher}") String topic
-    ) {
+            @Value("${souq.kafka.topics.publisher.patch:souq.publisher.patch.events}") String topic) {
         this.patchTemplate = patchTemplate;
         this.topic = topic;
     }

@@ -13,15 +13,17 @@ public class PlatformReviewEventProducer {
     private final KafkaTemplate<String, ReviewRatedEvent> reviewRatedTemplate;
 
     private final String reviewTopic;
+    private final String reviewRatedTopic;
 
     public PlatformReviewEventProducer(
             KafkaTemplate<String, ReviewSubmittedEvent> reviewSubmittedTemplate,
             KafkaTemplate<String, ReviewRatedEvent> reviewRatedTemplate,
-            @Value("${souq.kafka.topics.platform.review}") String reviewTopic
-    ) {
+            @Value("${souq.kafka.topics.platform.review}") String reviewTopic,
+            @Value("${souq.kafka.topics.platform.review-rated:souq.platform.review-rated.events}") String reviewRatedTopic) {
         this.reviewSubmittedTemplate = reviewSubmittedTemplate;
         this.reviewRatedTemplate = reviewRatedTemplate;
         this.reviewTopic = reviewTopic;
+        this.reviewRatedTopic = reviewRatedTopic;
     }
 
     public void publishReviewSubmitted(String key, ReviewSubmittedEvent event) {
@@ -30,7 +32,7 @@ public class PlatformReviewEventProducer {
     }
 
     public void publishReviewRated(String key, ReviewRatedEvent event) {
-        reviewRatedTemplate.send(reviewTopic, key, event);
+        reviewRatedTemplate.send(reviewRatedTopic, key, event);
         System.out.println("[PRODUCER] ReviewRated published: " + event.getRatingId());
     }
 }

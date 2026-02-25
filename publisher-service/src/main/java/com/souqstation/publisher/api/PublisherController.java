@@ -4,9 +4,11 @@ import com.souqstation.publisher.messaging.PublisherEventProducer;
 import com.souqstation.publisher.persistence.GameEntity;
 import com.souqstation.publisher.persistence.GameRepository;
 import com.souqstation.publisher.platform.PlatformClient;
+import com.souqstation.publisher.service.PatchService;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
+import com.souqstation.schemas.events.PatchPublishedEvent;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +24,18 @@ public class PublisherController {
     private final PublisherEventProducer producer;
     private final GameRepository gameRepository;
     private final PlatformClient platformClient;
+    private final PatchService patchService;
 
-    public PublisherController(PublisherEventProducer producer,
-                               GameRepository gameRepository,
-                               PlatformClient platformClient) {
+    public PublisherController(
+            PublisherEventProducer producer,
+            GameRepository gameRepository,
+            PlatformClient platformClient,
+            PatchService patchService
+    ) {
         this.producer = producer;
         this.gameRepository = gameRepository;
         this.platformClient = platformClient;
+        this.patchService = patchService;
     }
 
     @RequestMapping(value = "/publish-game", method = {RequestMethod.POST, RequestMethod.GET})
@@ -147,5 +154,62 @@ public class PublisherController {
     @GetMapping("/games/count")
     public long countGames(@RequestParam(name = "idEditeur") String publisherId) {
         return gameRepository.countByPublisherId(publisherId);
+    }
+
+    /**
+     * Publier un patch pour un jeu
+     * POST /publisher/publish-patch?gameId=G1&targetVersion=1.1.0&description=...&modifications=CORRECTION,OPTIMISATION&releasedAt=2026-03-15
+     */
+    @PostMapping("/publish-patch")
+    public ResponseEntity<Map<String, Object>> publishPatch(
+            @RequestParam String gameId,
+            @RequestParam String targetVersion,
+            @RequestParam(required = false) String description,
+            @RequestParam List<String> modifications,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releasedAt
+    ) {
+        try {
+            PatchPublishedEvent event = patchService.publishPatch(
+                    gameId,
+                    targetVersion,
+                    description,
+                    modifications,
+                    releasedAt.toInstant()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "PATCH_PUBLISHED",
+                    "eventId", event.getEventId(),
+                    "patchId", event.getPatchId(),
+                    "gameId", event.getGameId(),
+                    "previousVersion", event.getPreviousVersion(),
+                    "targetVersion", event.getTargetVersion(),
+                    "modifications", event.getModifications().stream()
+                            .map(Enum::name)
+                            .toList(),
+                    "releasedAt", event.getReleasedAt().toString()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "PATCH_REJECTED",
+                    "reason", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Récupérer l'historique des patches d'un jeu
+     * GET /publisher/games/{gameId}/patches
+     */
+    @GetMapping("/games/{gameId}/patches")
+    public ResponseEntity<Map<String, Object>> getPatchesByGame(@PathVariable String gameId) {
+        List<Map<String, Object>> patches = patchService.getPatchesByGame(gameId);
+        long count = patchService.countPatchesByGame(gameId);
+
+        return ResponseEntity.ok(Map.of(
+                "gameId", gameId,
+                "patchCount", count,
+                "patches", patches
+        ));
     }
 }

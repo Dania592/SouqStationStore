@@ -1,4 +1,4 @@
-package com.souqstation.publisher.persistence;
+package com.souqstation.platform.persistence;
 
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "games")
-public class GameEntity {
+@Table(name = "game_catalog")
+public class GameCatalogEntity {
 
     @Id
     @Column(name = "game_id", nullable = false, updatable = false)
@@ -17,7 +17,6 @@ public class GameEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    // description nullable
     @Column(name = "description")
     private String description;
 
@@ -35,19 +34,21 @@ public class GameEntity {
     @Column(name = "version", nullable = false)
     private String version;
 
-    // price nullable
     @Column(name = "price")
     private Double price;
 
     @Column(name = "release_date", nullable = false)
     private Instant releaseDate;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "added_at", nullable = false)
+    private Instant addedAt;
 
-    protected GameEntity() {}
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
-    public GameEntity(
+    protected GameCatalogEntity() {}
+
+    public GameCatalogEntity(
             String gameId,
             String name,
             String description,
@@ -57,7 +58,7 @@ public class GameEntity {
             String version,
             Double price,
             Instant releaseDate,
-            Instant createdAt
+            Instant addedAt
     ) {
         this.gameId = gameId;
         this.name = name;
@@ -68,9 +69,17 @@ public class GameEntity {
         this.version = version;
         this.price = price;
         this.releaseDate = releaseDate;
-        this.createdAt = createdAt;
+        this.addedAt = addedAt;
+        this.updatedAt = addedAt;
     }
 
+    // Méthode pour mettre à jour la version (lors d'un patch)
+    public void updateVersion(String newVersion) {
+        this.version = newVersion;
+        this.updatedAt = Instant.now();
+    }
+
+    // Getters
     public String getGameId() { return gameId; }
     public String getName() { return name; }
     public String getDescription() { return description; }
@@ -80,10 +89,17 @@ public class GameEntity {
     public String getVersion() { return version; }
     public Double getPrice() { return price; }
     public Instant getReleaseDate() { return releaseDate; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Instant getAddedAt() { return addedAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 
-    // Setter pour la version (nécessaire pour les patches)
-    public void setVersion(String version) {
-        this.version = version;
+    // Setters pour permettre la mise à jour
+    public void setPrice(Double price) {
+        this.price = price;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+        this.updatedAt = Instant.now();
     }
 }

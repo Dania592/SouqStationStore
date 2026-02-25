@@ -81,4 +81,20 @@ public class UserEntity {
         return birth;
     }
 
+    // Setter pour le solde (nécessaire pour les achats)
+    public void setSolde(float solde) {
+        this.solde = solde;
+    }
+
+    // Méthode utilitaire pour déduire un montant
+    public void deductBalance(double amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+        if (this.solde < amount) {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+        this.solde -= amount;
+    }
+
 }

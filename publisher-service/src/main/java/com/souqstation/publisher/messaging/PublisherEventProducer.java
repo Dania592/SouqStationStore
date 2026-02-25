@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import com.souqstation.schemas.events.GamePublished;
+import com.souqstation.schemas.events.DLCPublishedEvent;
 import org.apache.avro.generic.GenericRecord;
 
 @Component
@@ -14,8 +15,7 @@ public class PublisherEventProducer {
 
     public PublisherEventProducer(
             KafkaTemplate<String, Object> kafkaTemplate,
-            @Value("${souq.topics.publisher}") String topic
-    ) {
+            @Value("${souq.topics.publisher}") String topic) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = topic;
     }
@@ -28,7 +28,7 @@ public class PublisherEventProducer {
         kafkaTemplate.send(topic, key, event);
     }
 
-    public void publishDlc(String key, GenericRecord event) {
+    public void publishDlc(String key, DLCPublishedEvent event) {
         kafkaTemplate.send(topic, key, event);
     }
 }

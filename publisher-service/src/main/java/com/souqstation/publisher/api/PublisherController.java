@@ -9,16 +9,11 @@ import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
 import com.souqstation.schemas.events.PatchPublishedEvent;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
+import com.souqstation.schemas.events.DLCPublishedEvent;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,9 +26,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/publisher")
 public class PublisherController {
-
-        private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema(
-                        "../schemas/src/main/avro/events/dlc-published.avsc");
 
         private final PublisherEventProducer producer;
         private final GameRepository gameRepository;
@@ -140,20 +132,22 @@ public class PublisherController {
                         @RequestParam String publisherId,
                         @RequestParam(defaultValue = "0.0") double price) {
                 String eventId = UUID.randomUUID().toString();
-                long nowMillis = Instant.now().toEpochMilli();
+                Instant now = Instant.now();
+                long nowMillis = now.toEpochMilli();
 
-                GenericRecord event = new GenericData.Record(DLC_PUBLISHED_SCHEMA);
-                event.put("eventId", eventId);
-                event.put("eventType", "dlc.published");
-                event.put("occurredAt", nowMillis);
-                event.put("schemaVersion", 1);
-                event.put("dlcId", dlcId);
-                event.put("gameId", gameId);
-                event.put("name", name);
-                event.put("description", description);
-                event.put("publisherId", publisherId);
-                event.put("price", price);
-                event.put("releaseDate", nowMillis);
+                DLCPublishedEvent event = DLCPublishedEvent.newBuilder()
+                                .setEventId(eventId)
+                                .setEventType("dlc.published")
+                                .setOccurredAt(now)
+                                .setSchemaVersion(1)
+                                .setDlcId(dlcId)
+                                .setGameId(gameId)
+                                .setName(name)
+                                .setDescription(description)
+                                .setPublisherId(publisherId)
+                                .setPrice(price)
+                                .setReleaseDate(now)
+                                .build();
 
                 producer.publishDlc(gameId, event);
 
@@ -164,15 +158,6 @@ public class PublisherController {
                                 Map.entry("dlcId", dlcId),
                                 Map.entry("gameId", gameId),
                                 Map.entry("name", name)));
-        }
-
-        private static Schema loadSchema(String schemaPath) {
-                try {
-                        String rawSchema = Files.readString(Path.of(schemaPath));
-                        return new Schema.Parser().parse(rawSchema);
-                } catch (IOException e) {
-                        throw new IllegalStateException("Unable to load schema: " + schemaPath, e);
-                }
         }
 
         @GetMapping("/games/by-publisher")

@@ -32,7 +32,6 @@ import java.util.UUID;
 @RequestMapping("/publisher")
 public class PublisherController {
 
-        private static final Schema PATCH_PUBLISHED_SCHEMA = loadSchema("schemas/events/patch-published.avsc");
         private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema("schemas/events/dlc-published.avsc");
 
         private final PublisherEventProducer producer;
@@ -121,7 +120,7 @@ public class PublisherController {
                                 Map.entry("eventId", eventId),
                                 Map.entry("gameId", gameId),
                                 Map.entry("title", title),
-                                Map.entry("description", description),
+                                Map.entry("description", description != null ? description : ""),
                                 Map.entry("platform", platform.name()),
                                 Map.entry("genre", genre.name()),
                                 Map.entry("idEditeur", publisherId),
@@ -129,9 +128,6 @@ public class PublisherController {
                                 Map.entry("prixInit", prixInit),
                                 Map.entry("occurredAt", now.toString())));
         }
-
-        // L'ancienne méthode publishPatch (GenericRecord) a été remplacée par la
-        // version typée dans PatchService (voir plus bas)
 
         @RequestMapping(value = "/publish-dlc", method = { RequestMethod.POST, RequestMethod.GET })
         public ResponseEntity<Map<String, Object>> publishDlc(
@@ -166,20 +162,6 @@ public class PublisherController {
                                 Map.entry("dlcId", dlcId),
                                 Map.entry("gameId", gameId),
                                 Map.entry("name", name)));
-        }
-
-        private static List<GenericData.EnumSymbol> parseModificationTypes(String modificationsParam) {
-                Schema enumSchema = PATCH_PUBLISHED_SCHEMA
-                                .getField("modifications")
-                                .schema()
-                                .getElementType();
-
-                List<GenericData.EnumSymbol> values = new ArrayList<>();
-                Arrays.stream(modificationsParam.split(","))
-                                .map(String::trim)
-                                .filter(s -> !s.isBlank())
-                                .forEach(rawValue -> values.add(new GenericData.EnumSymbol(enumSchema, rawValue)));
-                return values;
         }
 
         private static Schema loadSchema(String schemaPath) {

@@ -45,7 +45,7 @@ public class PublisherEventsConsumer {
                 + " type=" + eventType
                 + " eventId=" + eventId
                 + " gameId=" + event.getGameId()
-                + " title=" + event.getTitle());
+                + " title=" + event.getName());
 
         ack.acknowledge();
     }

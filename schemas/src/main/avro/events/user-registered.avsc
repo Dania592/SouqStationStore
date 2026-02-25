@@ -1,21 +1,74 @@
 {
   "type": "record",
-  "name": "UserRegistered",
   "namespace": "com.souqstation.schemas.events",
-  "doc": "Event emitted when a user registers on the platform.",
+  "name": "UserRegistered",
+  "doc": "Événement : rédacteur enregistré",
   "fields": [
-    { "name": "eventId", "type": "string", "doc": "UUID as string" },
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "user.registered",
+      "doc": "Type d'événement"
+    },
     {
       "name": "occurredAt",
-      "type": { "type": "long", "logicalType": "timestamp-millis" },
-      "doc": "Event time in epoch millis"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence de l'événement"
     },
-    { "name": "userId", "type": "string" },
-    { "name": "name", "type": "string" },
-    { "name": "birth", "type": { "type": "long", "logicalType": "timestamp-millis" } },
-    { "name": "email", "type": "string" },
-    { "name": "displayName", "type": "string" },
-    { "name": "createdAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
-
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant unique de l'utilisateur inscrit"
+    },
+    {
+      "name": "displayName",
+      "type": "string",
+      "doc": "Nom d'affichage de l'utilisateur"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "Adresse email de l'utilisateur"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de création du compte"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc" : "Nom de l'utilisateur"
+    },
+    {
+      "name": "birth",
+      "type":
+      { "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc" : "Date de naissance de l'utilisateur"
+    },
+    {
+      "name" : "solde",
+      "type" : "float",
+      "doc" : "solde de l'utilisateur"
+    }
   ]
 }

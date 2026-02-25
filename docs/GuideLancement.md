@@ -29,50 +29,44 @@ wsl
 ## Lancement des services Spring Boot 
 platform-service (consumer) => 8081
 publisher-service (producer) => 8082
-- TODO : à compléter par la suite
+notification-service 
 
-## Test de fonctionnement 
-http://localhost:8082/publisher/publish-game?gameId=game-1&title=Halo
-### retour 
-```json
-{
-  "eventId": "bf2ed04a-b347-4a79-8351-e904b56e6da4",
-  "eventType": "GamePublished",
-  "occurredAt": "2026-02-04T20:59:56.890397300Z",
-  "schemaVersion": 1,
-  "payload": {
-    "gameId": "game-1",
-    "title": "Halo"
-  }
-}
-```
-- vérification dans Kafka UI : http://localhost:8080
-  → Topics → souq.publisher.events → Messages
-
-## Test de notification 
+## Tests pour chaque fonctionnalité
+### Création d'un user : 
 ```bash
-docker exec -it docker-kafka-1 bash
+curl -X POST "http://localhost:8081/platform/register-user" \
+-d "userId=U100" \
+-d "name=Dupont" \
+-d "email=dupont@test.com" \
+-d "displayName=JeanD" \
+-d "birth=1990-05-12" \
+-d "solde=100.5"
 
-kafka-console-producer \
-  --bootstrap-server kafka:9092 \
-  --topic souq.platform.events \
-  --property "parse.key=true" \
-  --property "key.separator=:" << 'EOF'
-game-1:{"eventId":"evt-002","eventType":"IncidentReported","occurredAt":"2026-02-10T12:01:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1","description":"Crash au lancement"}}
-EOF
+// ou 
+http://localhost:8081/platform/register-user?userId=U100&name=Dupont&email=dupont@test.com&displayName=JeanD&birth=1990-05-12&solde=100.5
+````
 
-kafka-console-producer \
-  --bootstrap-server kafka:9092 \
-  --topic souq.platform.events \
-  --property "parse.key=true" \
-  --property "key.separator=:" << 'EOF'
-user-1:{"eventId":"evt-001","eventType":"GamePurchased","occurredAt":"2026-02-10T12:00:00Z","schemaVersion":1,"payload":{"userId":"user-1","gameId":"game-1"}}
-EOF
+### Création d'un redactor 
+```bash
+curl -X POST "http://localhost:8081/platform/register-redactor" \
+-d "userId=R200" \
+-d "name=Martin" \
+-d "email=martin@test.com" \
+-d "displayName=MarcM" \
+-d "birth=1985-08-20" \
+-d "solde=250.75" \
+-d "individual=true"
+
+// ou 
+http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=martin%40test.com&displayName=MarcM&birth=1985-08-20&solde=250.75&individual=true
 ```
 
-## Création d'utilisateur 
-http://localhost:8081/platform/users/register?userId=user-1&email=user1@test.com&displayName=User1
+### Publication de jeu par un redactor
 ```bash
- docker exec -it docker-postgres-1  psql -U souq souq
- select * from users;
+http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&price=39.99&releaseDate=2025-10-10
+```
+
+### Follow d'un utilisateur à un autre  
+```bash
+http://localhost:8081/platform/users/follow?userId=U100&followedId=U200
 ```

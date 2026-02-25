@@ -1,12 +1,16 @@
 package com.souqstation.publisher.api;
 
 import com.souqstation.publisher.messaging.PublisherEventProducer;
+import com.souqstation.publisher.persistence.GameEntity;
+import com.souqstation.publisher.persistence.GameRepository;
+import com.souqstation.publisher.platform.PlatformClient;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +20,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,37 +34,83 @@ public class PublisherController {
     private static final Schema DLC_PUBLISHED_SCHEMA = loadSchema("schemas/events/dlc-published.avsc");
 
     private final PublisherEventProducer producer;
+    private final GameRepository gameRepository;
+    private final PlatformClient platformClient;
 
-    public PublisherController(PublisherEventProducer producer) {
+    public PublisherController(PublisherEventProducer producer,
+                               GameRepository gameRepository,
+                               PlatformClient platformClient) {
         this.producer = producer;
+        this.gameRepository = gameRepository;
+        this.platformClient = platformClient;
     }
 
     @RequestMapping(value = "/publish-game", method = {RequestMethod.POST, RequestMethod.GET})
     public ResponseEntity<Map<String, Object>> publishGame(
             @RequestParam String gameId,
             @RequestParam String title,
-            @RequestParam String description,
+            @RequestParam(required = false) String description,
             @RequestParam ExecPlatform platform,
             @RequestParam GameGenre genre,
-            @RequestParam String idEditeur,
+            @RequestParam(name = "idEditeur") String publisherId,
             @RequestParam(defaultValue = "1") String version,
-            @RequestParam(defaultValue = "0.0") float prixInit
+            @RequestParam(defaultValue = "0.0") float prixInit,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date releaseDate
     ) {
-        String eventId = UUID.randomUUID().toString();
+        // 1) Vérifier que le rédacteur/publisher existe
+        if (!platformClient.redactorExists(publisherId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "REDACTOR_NOT_FOUND",
+                    "publisherId", publisherId
+            ));
+        }
+
+        // 2) Vérifier que le gameId n'existe pas déjà (évite doublons)
+        if (gameRepository.existsByGameId(gameId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "GAME_ID_ALREADY_EXISTS",
+                    "gameId", gameId
+            ));
+        }
+
         Instant now = Instant.now();
+
+        // 3) Sauvegarder en base
+        Double price = (double) prixInit;
+        Instant releaseDateInstant = (releaseDate != null) ? releaseDate.toInstant() : now;
+
+        GameEntity saved = gameRepository.save(
+                new GameEntity(
+                        gameId,
+                        title,
+                        description,
+                        publisherId,
+                        platform,
+                        genre,
+                        version,
+                        price,
+                        releaseDateInstant,
+                        now
+                )
+        );
+
+        // 4) Publier l'event Kafka (schéma Avro)
+        String eventId = UUID.randomUUID().toString();
 
         GamePublished event = GamePublished.newBuilder()
                 .setEventId(eventId)
                 .setOccurredAt(now)
                 .setSchemaVersion(1)
-                .setGameId(gameId)
-                .setTitle(title)
-                .setDescription(description)
-                .setPlatformExc(platform)
-                .setGenres(genre)
-                .setIdEditeur(idEditeur)
-                .setVersion(version)
-                .setPrixInit(prixInit)
+                .setGameId(saved.getGameId())
+                .setTitle(saved.getName())
+                .setDescription(saved.getDescription())
+                .setPlatformExc(saved.getPlatformExc())
+                .setGenres(saved.getGenre())
+                .setIdEditeur(saved.getPublisherId())
+                .setVersion(saved.getVersion())
+                .setPrixInit(saved.getPrice() != null ? saved.getPrice().floatValue() : 0.0f)
                 .build();
 
         producer.publishGame(gameId, event);
@@ -71,7 +123,7 @@ public class PublisherController {
                 Map.entry("description", description),
                 Map.entry("platform", platform.name()),
                 Map.entry("genre", genre.name()),
-                Map.entry("idEditeur", idEditeur),
+                Map.entry("idEditeur", publisherId),
                 Map.entry("version", version),
                 Map.entry("prixInit", prixInit),
                 Map.entry("occurredAt", now.toString())
@@ -173,5 +225,41 @@ public class PublisherController {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to load schema: " + schemaPath, e);
         }
+    }
+
+    @GetMapping("/games/by-publisher")
+    public ResponseEntity<?> getGamesByPublisher(
+            @RequestParam(name = "idEditeur") String publisherId
+    ) {
+        if (!platformClient.redactorExists(publisherId)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "REJECTED",
+                    "reason", "REDACTOR_NOT_FOUND",
+                    "publisherId", publisherId
+            ));
+        }
+
+        List<GameEntity> games = gameRepository.findByPublisherId(publisherId);
+
+        List<Map<String, Object>> result = games.stream()
+                .map(g -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("gameId", g.getGameId());
+                    m.put("title", g.getName());
+                    m.put("platform", g.getPlatformExc().name());
+                    m.put("genre", g.getGenre().name());
+                    m.put("version", g.getVersion());
+                    m.put("price", g.getPrice());
+                    m.put("releaseDate", g.getReleaseDate());
+                    return m;
+                })
+                .toList();
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/games/count")
+    public long countGames(@RequestParam(name = "idEditeur") String publisherId) {
+        return gameRepository.countByPublisherId(publisherId);
     }
 }

@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "namespace": "com.souqstation.shared.events",
-  "name": "UserRegisteredEvent",
-  "doc": "Événement : Utilisateur enregistré",
+  "namespace": "com.souqstation.schemas.events",
+  "name": "RedactorRegisteredEvent",
+  "doc": "Événement : rédacteur enregistré",
   "fields": [
     {
       "name": "eventId",
@@ -35,11 +35,6 @@
       "doc": "Identifiant unique de l'utilisateur inscrit"
     },
     {
-      "name": "pseudo",
-      "type": "string",
-      "doc": "Pseudo choisi par l'utilisateur"
-    },
-    {
       "name": "displayName",
       "type": "string",
       "doc": "Nom d'affichage de l'utilisateur"
@@ -56,6 +51,29 @@
         "logicalType": "timestamp-millis"
       },
       "doc": "Date de création du compte"
+    },
+    {
+      "name" : "individual",
+      "type": "boolean",
+      "doc" : "Indique si le rédacteur est un particulier ou une entreprise"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc" : "Nom de l'utilisateur"
+    },
+    {
+      "name": "birth",
+      "type":
+        { "type": "long",
+          "logicalType": "timestamp-millis"
+        },
+      "doc" : "Date de naissance de l'utilisateur"
+    },
+    {
+      "name" : "solde",
+      "type" : "float",
+      "doc" : "solde de l'utilisateur"
     }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "type": "enum",
+  "name": "GameGenre",
+  "namespace": "com.souqstation.schemas.common",
+  "symbols": ["ACTION", "RPG", "STRATEGY"]
+}

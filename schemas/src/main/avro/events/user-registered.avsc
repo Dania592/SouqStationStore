@@ -1,0 +1,74 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.schemas.events",
+  "name": "UserRegistered",
+  "doc": "Événement : rédacteur enregistré",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "user.registered",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence de l'événement"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "userId",
+      "type": "string",
+      "doc": "Identifiant unique de l'utilisateur inscrit"
+    },
+    {
+      "name": "displayName",
+      "type": "string",
+      "doc": "Nom d'affichage de l'utilisateur"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "Adresse email de l'utilisateur"
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de création du compte"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc" : "Nom de l'utilisateur"
+    },
+    {
+      "name": "birth",
+      "type":
+      { "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc" : "Date de naissance de l'utilisateur"
+    },
+    {
+      "name" : "solde",
+      "type" : "float",
+      "doc" : "solde de l'utilisateur"
+    }
+  ]
+}

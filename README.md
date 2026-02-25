@@ -30,7 +30,7 @@ L'infrastructure est operationnelle et les flux d'evenements principaux ont ét�
 | notification-service | 8083 | En cours | Route les evenements vers les notifications utilisateurs        |
 
 ### Statut de l'Infrastructure
-
+ => à revoir (les ports)
 
 | Composant              | Port  | Statut                              |
 | ---------------------- | ----- | ----------------------------------- |
@@ -61,7 +61,6 @@ J'ai retire la dependance invalide dans settings.gradle qui ne servait a rien. J
 souqstationstore/
 │
 ├── schemas/
-├── shared/
 ├── publisher-service/
 ├── platform-service/
 ├── notification-service/
@@ -131,7 +130,7 @@ schemas/
 | review.avsc    | Avro Model | Structure d'une évaluation |
 | purchase.avsc  | Avro Model | Structure d'une transaction |
 
-#### Shared :
+#### Shared : VIDE POUR L'INSTANT 
 
 Contient les éléments partagés entre tous les services.
 shared/

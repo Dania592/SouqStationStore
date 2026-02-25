@@ -1,0 +1,81 @@
+{
+  "type": "record",
+  "namespace": "com.souqstation.schemas.events",
+  "name": "GamePublished",
+  "doc": "Événement : Jeu publié",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identifiant unique de l'événement"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "game.published",
+      "doc": "Type d'événement"
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Timestamp d'occurrence"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "default": 1,
+      "doc": "Version du schéma"
+    },
+    {
+      "name": "gameId",
+      "type": "string",
+      "doc": "Identifiant unique du jeu publié"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Nom du jeu"
+    },
+    {
+      "name": "description",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "Description du jeu"
+    },
+    {
+      "name": "publisherId",
+      "type": "string",
+      "doc": "Identifiant de l'éditeur"
+    },
+    {"name" :  "platformExc", "type" : "com.souqstation.schemas.common.ExecPlatform"},
+    {"name" :  "genres", "type" :  "com.souqstation.schemas.common.GameGenre"},
+    {
+      "name": "version",
+      "type": "string",
+      "doc": "Version initiale du jeu"
+    },
+    {
+      "name": "price",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null,
+      "doc": "Prix du jeu"
+    },
+    {
+      "name": "releaseDate",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date de sortie"
+    }
+  ]
+}

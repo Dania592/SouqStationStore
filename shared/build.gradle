@@ -1,7 +1,0 @@
-plugins {
-    id 'java-library'
-}
-
-dependencies {
-    // plus tard : avro, kafka, utils
-}

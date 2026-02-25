@@ -1,0 +1,6 @@
+{
+  "type": "enum",
+  "name": "ExecPlatform",
+  "namespace": "com.souqstation.schemas.common",
+  "symbols": ["PC", "SWITCH", "WEB"]
+}

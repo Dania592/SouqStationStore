@@ -5,11 +5,26 @@ spring:
   application:
     name: publisher-service
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/souq
+    username: souq
+    password: souq
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
   kafka:
     bootstrap-servers: localhost:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: http://localhost:8085
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
@@ -21,3 +36,5 @@ spring:
 souq:
   topics:
     publisher: souq.publisher.events
+  platform:
+    url: http://localhost:8081

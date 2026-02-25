@@ -5,7 +5,9 @@ plugins {
 }
 
 dependencies {
-    implementation project(':shared')
+    implementation project(':schemas')
+    implementation 'io.confluent:kafka-avro-serializer:7.6.1'
+    implementation 'org.apache.avro:avro:1.12.1'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.kafka:spring-kafka'
@@ -17,6 +19,3 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 }
 
-test {
-    useJUnitPlatform()
-}

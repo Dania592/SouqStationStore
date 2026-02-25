@@ -22,9 +22,16 @@ spring:
       auto-offset-reset: earliest
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        schema.registry.url: http://localhost:8085
+        specific.avro.reader: true
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: http://localhost:8085
     listener:
       ack-mode: manual
 
@@ -33,4 +40,6 @@ souq:
     publisher: souq.publisher.events
   kafka:
     topics:
-      platform: souq.platform.events
+      platform:
+        user: souq.platform.user.events
+        redactor: souq.platform.redactor.events

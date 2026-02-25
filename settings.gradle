@@ -3,7 +3,6 @@ plugins {
 }
 rootProject.name = 'SouqStationStore'
 
-include 'shared'
 include 'schemas'
 include 'publisher-service'
 include 'platform-service'

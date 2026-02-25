@@ -1,9 +1,12 @@
 package com.souqstation.platform.service;
 
+import com.souqstation.platform.persistence.DLCCatalogEntity;
+import com.souqstation.platform.persistence.DLCCatalogRepository;
 import com.souqstation.platform.persistence.GameCatalogEntity;
 import com.souqstation.platform.persistence.GameCatalogRepository;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
+import com.souqstation.schemas.events.DLCPublishedEvent;
 import com.souqstation.schemas.events.GamePublished;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +21,14 @@ import java.util.stream.Collectors;
 public class CatalogService {
 
     private final GameCatalogRepository gameCatalogRepository;
+    private final DLCCatalogRepository dlcCatalogRepository;
 
-    public CatalogService(GameCatalogRepository gameCatalogRepository) {
+    public CatalogService(
+            GameCatalogRepository gameCatalogRepository,
+            DLCCatalogRepository dlcCatalogRepository
+    ) {
         this.gameCatalogRepository = gameCatalogRepository;
+        this.dlcCatalogRepository = dlcCatalogRepository;
     }
 
     @Transactional
@@ -61,6 +69,33 @@ public class CatalogService {
         gameCatalogRepository.save(game);
 
         System.out.println("[CATALOG] Game version updated: " + gameId + " -> " + newVersion);
+    }
+
+    @Transactional
+    public void addDLCToCatalog(DLCPublishedEvent event) {
+        String dlcId = event.getDlcId();
+
+        // Vérifier si le DLC est déjà dans le catalogue
+        if (dlcCatalogRepository.existsById(dlcId)) {
+            System.out.println("[CATALOG] DLC already in catalog: " + dlcId);
+            return;
+        }
+
+        // Créer l'entrée dans le catalogue DLC
+        DLCCatalogEntity catalogEntry = new DLCCatalogEntity(
+                dlcId,
+                event.getName(),
+                event.getDescription(),
+                event.getGameId(),
+                event.getPublisherId(),
+                event.getPrice(),
+                event.getReleaseDate(),
+                Instant.now()
+        );
+
+        dlcCatalogRepository.save(catalogEntry);
+
+        System.out.println("[CATALOG] DLC added to catalog: " + dlcId + " for game: " + event.getGameId());
     }
 
     public List<Map<String, Object>> getAllGames() {

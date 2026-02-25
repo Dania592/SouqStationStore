@@ -36,5 +36,8 @@ spring:
 souq:
   topics:
     publisher: souq.publisher.events
+    platform:
+      review: souq.platform.review.events
+      incident: souq.platform.incident.events
   platform:
     url: http://localhost:8081

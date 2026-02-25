@@ -1,6 +1,7 @@
 package com.souqstation.platform.api;
 
 import com.souqstation.platform.service.PurchaseService;
+import com.souqstation.schemas.events.DLCPurchasedEvent;
 import com.souqstation.schemas.events.GamePurchasedEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -104,5 +105,60 @@ public class PurchaseController {
                 "gameId", gameId,
                 "salesCount", count
         ));
+    }
+
+    /**
+     * Acheter un DLC
+     * POST /platform/purchases/dlc?userId=U1&dlcId=DLC1
+     */
+    @PostMapping("/dlc")
+    public ResponseEntity<Map<String, Object>> purchaseDLC(
+            @RequestParam String userId,
+            @RequestParam String dlcId
+    ) {
+        try {
+            DLCPurchasedEvent event = purchaseService.purchaseDLC(userId, dlcId);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "DLC_PURCHASE_SUCCESS",
+                    "eventId", event.getEventId(),
+                    "purchaseId", event.getPurchaseId(),
+                    "userId", event.getUserId(),
+                    "dlcId", event.getDlcId(),
+                    "dlcName", event.getDlcName(),
+                    "gameId", event.getGameId(),
+                    "price", event.getPrice(),
+                    "purchasedAt", event.getPurchasedAt().toString()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "DLC_PURCHASE_FAILED",
+                    "reason", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Récupérer les DLC possédés par un utilisateur
+     * GET /platform/purchases/dlcs?userId=U1
+     */
+    @GetMapping("/dlcs")
+    public ResponseEntity<Map<String, Object>> getUserDLCs(
+            @RequestParam String userId
+    ) {
+        try {
+            List<Map<String, Object>> dlcs = purchaseService.getUserDLCs(userId);
+
+            return ResponseEntity.ok(Map.of(
+                    "userId", userId,
+                    "dlcCount", dlcs.size(),
+                    "dlcs", dlcs
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "ERROR",
+                    "reason", e.getMessage()
+            ));
+        }
     }
 }

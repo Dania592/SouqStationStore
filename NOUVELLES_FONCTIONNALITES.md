@@ -114,6 +114,64 @@
 
 ---
 
+## 6. GESTION DLC (publisher-service + platform-service)
+
+### Fichiers créés (publisher-service)
+- `persistence/DLCEntity.java`
+- `persistence/DLCRepository.java`
+- `messaging/PublisherDLCEventProducer.java`
+- `service/DLCService.java`
+
+### Fichiers créés (platform-service)
+- `persistence/DLCPurchaseEntity.java`
+- `persistence/DLCPurchaseRepository.java`
+- `persistence/DLCCatalogEntity.java`
+- `persistence/DLCCatalogRepository.java`
+- `messaging/PlatformDLCPurchaseEventProducer.java`
+
+### Fichiers modifiés
+- `api/PublisherController.java` - Endpoints publication DLC
+- `service/PurchaseService.java` - Méthode achat DLC
+- `api/PurchaseController.java` - Endpoints achat DLC
+- `service/CatalogService.java` - Méthode ajout DLC catalogue
+- `messaging/PublisherEventsConsumer.java` - Consommation DLCPublishedEvent
+
+### Endpoints (publisher-service)
+- `POST /publisher/publish-dlc` - Publier DLC
+- `GET /publisher/games/{gameId}/dlcs` - Liste DLC d'un jeu
+
+### Endpoints (platform-service)
+- `POST /platform/purchases/dlc` - Acheter DLC
+- `GET /platform/purchases/dlcs` - DLC possédés
+
+### Logique métier
+- **Vérifier user possède le jeu de base avant achat DLC**
+- Publier `DLCPublishedEvent` → ajouté au catalogue
+- Publier `DLCPurchasedEvent`
+
+---
+
+## 7. CONSOMMATION RETOURS UTILISATEURS (publisher-service)
+
+### Fichiers créés
+- `persistence/ReceivedReviewEntity.java`
+- `persistence/ReceivedReviewRepository.java`
+- `persistence/ReceivedIncidentEntity.java`
+- `persistence/ReceivedIncidentRepository.java`
+- `messaging/ReviewConsumer.java`
+- `messaging/IncidentConsumer.java`
+
+### Fichiers modifiés
+- `application.yml` - Topics platform.review et platform.incident
+
+### Logique métier
+- Consommer `ReviewSubmittedEvent` → stocker dans ReceivedReviewEntity
+- Consommer `IncidentReportedEvent` → stocker dans ReceivedIncidentEntity
+- **Idempotence via ConsumedEventEntity**
+- Permet aux éditeurs de monitorer avis/bugs sur leurs jeux
+
+---
+
 ## 📋 CONFIGURATIONS
 
 ### application.yml (platform-service)
@@ -124,11 +182,21 @@ souq.kafka.topics.platform:
   incident: souq.platform.incident.events
 ```
 
+### application.yml (publisher-service)
+```yaml
+souq.topics:
+  publisher: souq.publisher.events
+  platform:
+    review: souq.platform.review.events
+    incident: souq.platform.incident.events
+```
+
 ### setup-kafka-topics.sh
 ```bash
 souq.platform.purchase.events
 souq.platform.review.events
 souq.platform.incident.events
+souq.publisher.events
 ```
 
 ### Modifications UserEntity
@@ -138,4 +206,5 @@ souq.platform.incident.events
 ---
 
 **Date** : 25 février 2026  
-**Patterns respectés** : JPA entities, @Transactional, Avro events, manual ACK Kafka
+**Patterns respectés** : JPA entities, @Transactional, Avro events, manual ACK Kafka  
+**Event Flow** : Bidirectionnel (publisher→platform + platform→publisher)

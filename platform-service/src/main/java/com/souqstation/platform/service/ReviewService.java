@@ -67,6 +67,7 @@ public class ReviewService {
             throw new IllegalArgumentException("Rating must be between 0 and 10");
         }
 
+        // 5) Temps minimum de jeu
         long playedSeconds = gameplayService.getTotalPlaytimeSeconds(userId, gameId);
         if (playedSeconds < MIN_REVIEW_PLAYTIME_SECONDS) {
             long remaining = MIN_REVIEW_PLAYTIME_SECONDS - playedSeconds;
@@ -76,7 +77,7 @@ public class ReviewService {
             );
         }
 
-        // 5) Créer la review
+        // 6) Créer la review
         String reviewId = UUID.randomUUID().toString();
         ReviewEntity review = new ReviewEntity(
                 reviewId,
@@ -90,7 +91,7 @@ public class ReviewService {
 
         reviewRepository.save(review);
 
-        // 6) Créer l'événement Avro
+        // 7) Créer l'événement Avro
         ReviewSubmittedEvent event = ReviewSubmittedEvent.newBuilder()
                 .setEventId(UUID.randomUUID().toString())
                 .setOccurredAt(now)
@@ -104,7 +105,7 @@ public class ReviewService {
                 .setSubmittedAt(now)
                 .build();
 
-        // 7) Publier vers Kafka
+        // 8) Publier vers Kafka
         producer.publishReviewSubmitted(gameId, event);
 
         return event;

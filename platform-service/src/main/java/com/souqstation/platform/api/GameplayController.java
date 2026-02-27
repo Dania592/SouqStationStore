@@ -41,7 +41,7 @@ public class GameplayController {
         long total = gameplayService.getTotalPlaytimeSeconds(userId, gameId);
         return ResponseEntity.ok(Map.of(
                 "userId", userId,
-                "gameId", gameId,
+                "gameId", gameId == null ? "" : gameId,
                 "totalSeconds", total
         ));
     }

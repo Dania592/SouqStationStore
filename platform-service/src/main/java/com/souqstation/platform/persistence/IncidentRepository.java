@@ -1,5 +1,7 @@
 package com.souqstation.platform.persistence;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,4 +21,9 @@ public interface IncidentRepository extends JpaRepository<IncidentEntity, String
     long countByGameId(String gameId);
 
     long countByGameIdAndSeverity(String gameId, IncidentEntity.IncidentSeverity severity);
+
+    Page<IncidentEntity> findByGameId(String gameId, Pageable pageable);
+
+    Page<IncidentEntity> findByGameIdAndSeverity(String gameId, IncidentEntity.IncidentSeverity severity, Pageable pageable);
+
 }

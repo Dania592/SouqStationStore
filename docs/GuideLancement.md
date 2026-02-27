@@ -127,3 +127,36 @@ curl -X POST "http://localhost:8082/publisher/publish-patch" \
 ```bash
 curl "http://localhost:8081/platform/catalog/games/G300"
 ```
+
+### Check de feedback reviews 
+```bash
+http://localhost:8081/platform/feedback/reviews?gameId=G340
+```
+
+### check des incidents
+```bash
+http://localhost:8081/platform/feedback/incidents?gameId=G340"
+```
+
+### Consultation de statistiques 
+```bash
+http://localhost:8081/platform/feedback/reviews/g1/stats
+```
+
+### Lancement d'un jeu 
+```bash
+http://localhost:8081/platform/sessions/start?userId=ma&gameId=G340
+```
+
+### Fin de jeu 
+```bash
+http://localhost:8081/platform/sessions/end?userId=ma&gameId=G340
+```
+
+### Consultation des stats 
+```bash
+http://localhost:8081/platform/sessions/users/ma/playtime?gameId=G340
+```
+
+
+

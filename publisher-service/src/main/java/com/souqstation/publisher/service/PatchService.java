@@ -1,16 +1,14 @@
 package com.souqstation.publisher.service;
 
 import com.souqstation.publisher.messaging.PublisherPatchEventProducer;
-import com.souqstation.publisher.persistence.GameEntity;
-import com.souqstation.publisher.persistence.GameRepository;
-import com.souqstation.publisher.persistence.PatchEntity;
-import com.souqstation.publisher.persistence.PatchRepository;
+import com.souqstation.publisher.persistence.*;
 import com.souqstation.schemas.events.PatchPublishedEvent;
 import com.souqstation.schemas.events.enums.ModificationType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,15 +20,17 @@ public class PatchService {
     private final PatchRepository patchRepository;
     private final GameRepository gameRepository;
     private final PublisherPatchEventProducer producer;
+    private final DlcRepository dlcRepository;
 
     public PatchService(
             PatchRepository patchRepository,
             GameRepository gameRepository,
-            PublisherPatchEventProducer producer
+            PublisherPatchEventProducer producer, DlcRepository dlcRepository
     ) {
         this.patchRepository = patchRepository;
         this.gameRepository = gameRepository;
         this.producer = producer;
+        this.dlcRepository = dlcRepository;
     }
 
     @Transactional
@@ -137,5 +137,20 @@ public class PatchService {
                 "releasedAt", patch.getReleasedAt().toString(),
                 "createdAt", patch.getCreatedAt().toString()
         );
+    }
+
+    public List<Map<String, Object>> getDlcsByGame(String gameId) {
+        return dlcRepository.findByGameId(gameId)
+                .stream()
+                .map(d -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("dlcId", d.getDlcId());
+                    m.put("name", d.getName());
+                    m.put("description", d.getDescription());
+                    m.put("price", d.getPrice());
+                    m.put("releaseDate", d.getReleaseDate());
+                    return m;
+                })
+                .toList();
     }
 }

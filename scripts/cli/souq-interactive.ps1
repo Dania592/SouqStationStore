@@ -394,13 +394,15 @@ function CatalogListGames {
 
   try {
     $url = "$($env:PLATFORM_URL)/platform/catalog/games$query"
-    $games = Invoke-RestMethod -Method GET -Uri $url
 
-    if ($null -eq $games -or $games.Count -eq 0) {
+    $resp = Invoke-RestMethod -Method GET -Uri $url
+
+    $items = $resp.games
+    if ($null -eq $items -or $items.Count -eq 0) {
       Write-Host "Aucun jeu dans le catalogue."
     } else {
-      Write-Host "Catalogue:"
-      foreach ($g in $games) {
+      Write-Host ("Catalogue: {0} jeu(x)" -f $resp.totalGames)
+      foreach ($g in $items) {
         Write-Host "----------------------"
         Write-Host ("{0} ({1})" -f $g.title, $g.gameId)
         if ($g.platform) { Write-Host ("Plateforme: {0}" -f $g.platform) }
@@ -583,7 +585,7 @@ function ReportIncident {
   if ($script:CURRENT_ROLE -eq "NONE") { Write-Host "Veuillez d'abord vous connecter."; Pause; return }
 
   $gameId = Prompt "GameId" "G300"
-  $severity = (Prompt "Sévérité (HAUTE/MOYENNE/BASSE)" "HAUTE").ToUpper()
+  $severity = (Prompt "Sévérité (HAUTE/NORMALE/BASSE/CRITIQUE)" "HAUTE").ToUpper()
   $desc = Prompt "Description" "Crashs intempestifs"
   $envt = Prompt "Environment" "Windows 11"
 
@@ -689,12 +691,12 @@ function PublishDlc {
   try {
     $url = "$($env:PUBLISHER_URL)/publisher/publish-dlc"
     $r = HttpPostForm $url @{
-      gameId = $gameId
-      dlcId = $dlcId
-      title = $title
+      gameId      = $gameId
+      dlcId       = $dlcId
+      name        = $title
       description = $desc
-      price = $price
-      releasedAt = $releasedAt
+      price       = $price
+      publisherId = $script:CURRENT_USER_ID
     }
     $r | ConvertTo-Json -Depth 10
     Write-Host "DLC publié"
@@ -709,8 +711,20 @@ function ListDlcsForGamePublisher {
 
   try {
     $url = "$($env:PUBLISHER_URL)/publisher/games/$(UrlEncode $gameId)/dlcs"
-    $r = Invoke-RestMethod -Method GET -Uri $url
-    $r | ConvertTo-Json -Depth 10
+    $resp = Invoke-RestMethod -Method GET -Uri $url
+
+    $items = $resp.dlcs
+    if ($null -eq $items -or $items.Count -eq 0) {
+      Write-Host "Aucun DLC pour ce jeu."
+    } else {
+      Write-Host ("DLCs pour {0}: {1}" -f $resp.gameId, $resp.dlcCount)
+      foreach ($d in $items) {
+        Write-Host "----------------------"
+        Write-Host ("{0} ({1})" -f $d.name, $d.dlcId)
+        if ($d.price -ne $null) { Write-Host ("Prix: {0}" -f $d.price) }
+        if ($d.releaseDate) { Write-Host ("Sortie: {0}" -f $d.releaseDate) }
+      }
+    }
   } catch { ShowHttpError $_ }
 
   Pause

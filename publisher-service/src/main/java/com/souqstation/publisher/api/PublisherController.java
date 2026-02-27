@@ -1,6 +1,8 @@
 package com.souqstation.publisher.api;
 
 import com.souqstation.publisher.messaging.PublisherEventProducer;
+import com.souqstation.publisher.persistence.DlcEntity;
+import com.souqstation.publisher.persistence.DlcRepository;
 import com.souqstation.publisher.persistence.GameEntity;
 import com.souqstation.publisher.persistence.GameRepository;
 import com.souqstation.publisher.platform.PlatformClient;
@@ -31,16 +33,18 @@ public class PublisherController {
         private final GameRepository gameRepository;
         private final PlatformClient platformClient;
         private final PatchService patchService;
+        private final DlcRepository dlcRepository;
 
         public PublisherController(
-                        PublisherEventProducer producer,
-                        GameRepository gameRepository,
-                        PlatformClient platformClient,
-                        PatchService patchService) {
+                PublisherEventProducer producer,
+                GameRepository gameRepository,
+                PlatformClient platformClient,
+                PatchService patchService, DlcRepository dlcRepository) {
                 this.producer = producer;
                 this.gameRepository = gameRepository;
                 this.platformClient = platformClient;
                 this.patchService = patchService;
+            this.dlcRepository = dlcRepository;
         }
 
         @RequestMapping(value = "/publish-game", method = { RequestMethod.POST, RequestMethod.GET })
@@ -125,39 +129,80 @@ public class PublisherController {
 
         @RequestMapping(value = "/publish-dlc", method = { RequestMethod.POST, RequestMethod.GET })
         public ResponseEntity<Map<String, Object>> publishDlc(
-                        @RequestParam String dlcId,
-                        @RequestParam String gameId,
-                        @RequestParam String name,
-                        @RequestParam(required = false) String description,
-                        @RequestParam String publisherId,
-                        @RequestParam(defaultValue = "0.0") double price) {
-                String eventId = UUID.randomUUID().toString();
-                Instant now = Instant.now();
-                long nowMillis = now.toEpochMilli();
+                @RequestParam String dlcId,
+                @RequestParam String gameId,
+                @RequestParam String name,
+                @RequestParam(required = false) String description,
+                @RequestParam String publisherId,
+                @RequestParam(defaultValue = "0.0") double price) {
 
+                // (Optionnel mais recommandé) vérifier que le publisher existe
+                if (!platformClient.redactorExists(publisherId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "status", "REJECTED",
+                                "reason", "REDACTOR_NOT_FOUND",
+                                "publisherId", publisherId));
+                }
+
+                // (Optionnel mais recommandé) vérifier que le jeu existe dans le publisher-service
+                if (!gameRepository.existsByGameId(gameId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "status", "REJECTED",
+                                "reason", "GAME_NOT_FOUND",
+                                "gameId", gameId));
+                }
+
+                // éviter doublons
+                if (dlcRepository.existsById(dlcId)) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "status", "REJECTED",
+                                "reason", "DLC_ID_ALREADY_EXISTS",
+                                "dlcId", dlcId));
+                }
+
+                Instant now = Instant.now();
+                String eventId = UUID.randomUUID().toString();
+
+                // 1) Sauver en base (publisher)
+                dlcRepository.save(new DlcEntity(
+                        dlcId,
+                        gameId,
+                        name,
+                        description,
+                        publisherId,
+                        price,
+                        now,   // releaseDate (si tu veux un param releaseDate, on peut l'ajouter)
+                        now    // createdAt
+                ));
+
+                // 2) Publier l'event Kafka (Avro)
                 DLCPublishedEvent event = DLCPublishedEvent.newBuilder()
-                                .setEventId(eventId)
-                                .setEventType("dlc.published")
-                                .setOccurredAt(now)
-                                .setSchemaVersion(1)
-                                .setDlcId(dlcId)
-                                .setGameId(gameId)
-                                .setName(name)
-                                .setDescription(description)
-                                .setPublisherId(publisherId)
-                                .setPrice(price)
-                                .setReleaseDate(now)
-                                .build();
+                        .setEventId(eventId)
+                        .setEventType("dlc.published")
+                        .setOccurredAt(now)
+                        .setSchemaVersion(1)
+                        .setDlcId(dlcId)
+                        .setGameId(gameId)
+                        .setName(name)
+                        .setDescription(description)
+                        .setPublisherId(publisherId)
+                        .setPrice(price)
+                        .setReleaseDate(now)
+                        .build();
 
                 producer.publishDlc(gameId, event);
 
                 return ResponseEntity.ok(Map.ofEntries(
-                                Map.entry("status", "PUBLISHED_TO_KAFKA"),
-                                Map.entry("eventType", "DLCPublishedEvent"),
-                                Map.entry("eventId", eventId),
-                                Map.entry("dlcId", dlcId),
-                                Map.entry("gameId", gameId),
-                                Map.entry("name", name)));
+                        Map.entry("status", "PUBLISHED_TO_KAFKA"),
+                        Map.entry("eventType", "DLCPublishedEvent"),
+                        Map.entry("eventId", eventId),
+                        Map.entry("dlcId", dlcId),
+                        Map.entry("gameId", gameId),
+                        Map.entry("name", name),
+                        Map.entry("publisherId", publisherId),
+                        Map.entry("price", price),
+                        Map.entry("occurredAt", now.toString())
+                ));
         }
 
         @GetMapping("/games/by-publisher")
@@ -245,5 +290,31 @@ public class PublisherController {
                                 "gameId", gameId,
                                 "patchCount", count,
                                 "patches", patches));
+        }
+
+        @GetMapping("/games/{gameId}/dlcs")
+        public ResponseEntity<Map<String, Object>> getDlcsByGame(@PathVariable String gameId) {
+
+                List<DlcEntity> dlcs = dlcRepository.findByGameId(gameId);
+
+                List<Map<String, Object>> result = dlcs.stream()
+                        .map(d -> {
+                                Map<String, Object> m = new LinkedHashMap<>();
+                                m.put("dlcId", d.getDlcId());
+                                m.put("gameId", d.getGameId());
+                                m.put("name", d.getName());
+                                m.put("description", d.getDescription());
+                                m.put("publisherId", d.getPublisherId());
+                                m.put("price", d.getPrice());
+                                m.put("releaseDate", d.getReleaseDate());
+                                return m;
+                        })
+                        .toList();
+
+                return ResponseEntity.ok(Map.of(
+                        "gameId", gameId,
+                        "dlcCount", result.size(),
+                        "dlcs", result
+                ));
         }
 }

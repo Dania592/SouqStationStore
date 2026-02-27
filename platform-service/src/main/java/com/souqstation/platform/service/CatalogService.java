@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,4 +123,5 @@ public class CatalogService {
                 Map.entry("addedAt", game.getAddedAt().toString()),
                 Map.entry("updatedAt", game.getUpdatedAt().toString()));
     }
+
 }

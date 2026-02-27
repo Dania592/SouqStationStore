@@ -29,6 +29,7 @@ spring:
       properties:
         schema.registry.url: http://localhost:8085
         specific.avro.reader: true
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer

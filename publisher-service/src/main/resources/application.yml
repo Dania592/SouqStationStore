@@ -28,6 +28,7 @@ spring:
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       properties:
         schema.registry.url: http://localhost:8085
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
     consumer:
       group-id: publisher-service
       auto-offset-reset: earliest
@@ -37,6 +38,7 @@ spring:
       properties:
         schema.registry.url: http://localhost:8085
         specific.avro.reader: false
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
     listener:
       ack-mode: manual
 

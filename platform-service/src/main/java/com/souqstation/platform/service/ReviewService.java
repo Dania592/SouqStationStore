@@ -21,19 +21,22 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final GamePurchaseRepository gamePurchaseRepository;
     private final PlatformReviewEventProducer producer;
+    private final GameplayService gameplayService;
+    private static final long MIN_REVIEW_PLAYTIME_SECONDS = 3L * 60L; // 3 minutes de jeu minimum
 
     public ReviewService(
             ReviewRepository reviewRepository,
             ReviewRatingRepository reviewRatingRepository,
             UserRepository userRepository,
             GamePurchaseRepository gamePurchaseRepository,
-            PlatformReviewEventProducer producer
+            PlatformReviewEventProducer producer, GameplayService gameplayService
     ) {
         this.reviewRepository = reviewRepository;
         this.reviewRatingRepository = reviewRatingRepository;
         this.userRepository = userRepository;
         this.gamePurchaseRepository = gamePurchaseRepository;
         this.producer = producer;
+        this.gameplayService = gameplayService;
     }
 
     @Transactional
@@ -62,6 +65,15 @@ public class ReviewService {
         // 4) Valider la note
         if (note < 0 || note > 10) {
             throw new IllegalArgumentException("Rating must be between 0 and 10");
+        }
+
+        long playedSeconds = gameplayService.getTotalPlaytimeSeconds(userId, gameId);
+        if (playedSeconds < MIN_REVIEW_PLAYTIME_SECONDS) {
+            long remaining = MIN_REVIEW_PLAYTIME_SECONDS - playedSeconds;
+            long remainingMin = (remaining + 59) / 60;
+            throw new IllegalArgumentException(
+                    "You must play at least 3 minutes before reviewing. Remaining: " + remainingMin + "minute(s)."
+            );
         }
 
         // 5) Créer la review

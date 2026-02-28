@@ -1,162 +1,104 @@
-# Guide de lancement - SouqStationStore
-Ce document décrit **les étapes pour lancer le projet localement**, ainsi que les **erreurs fréquentes rencontrées** et leurs **solutions**.
+# Documentation - SouqStationStore
 
-Il est destiné à faciliter le démarrage du projet pour toute l’équipe.
+Ce répertoire contient la documentation technique et le guide d'utilisation du projet SouqStationStore.
 
-## Lancement de l'infrastructure kafka, Registry, DB 
+## 🚀 Démarrage Rapide (Recommandé)
+
+Nous avons créé un script interactif **`start.ps1`** situé à la racine du projet. 
+Ce script prend en charge l'initialisation de l'environnement de bout en bout.
+
+**Pour lancer le projet via le script :**
+1. Ouvrez un terminal.
+2. Lancez la commande suivante à la racine :
+   - Sur **Windows** :
+     ```powershell
+     pwsh ./start.ps1
+     ```
+   - Sur **Mac/Linux** :
+     ```bash
+     chmod +x ./start.sh
+     ./start.sh
+     ```
+3. Suivez les instructions à l'écran :
+   - Le script lancera Docker (Kafka, Zookeeper, Registry, Postgres).
+   - Il créera les topics Kafka requis.
+   - Il vous demandera de lancer vos microservices Spring Boot depuis votre IDE.
+   - Il peuplera automatiquement la base de données de test.
+   - Il vous expliquera comment lancer le CLI interactif pour tester l'application.
+
+---
+
+## 🛠 Lancement Manuel
+
+Si vous préférez tout lancer manuellement plutôt que d'utiliser `start.ps1`, voici les étapes détaillées :
+
+### 1. Infrastructure (Docker)
 ```bash
 cd infrastructure/docker
 docker compose up -d
 ```
+Les services actifs incluent Kafka, Zookeeper, Schema Registry (8085), Kafka-UI (8080) et PostgreSQL.
 
-### Vérification 
+### 2. Création des topics Kafka
+Depuis la racine :
 ```bash
-docker ps
-```
-Doivent être actifs :
-- kafka
-- zookeeper
-- schema-registry
-- kafka-ui => http://localhost:8080
-- postgres
-
-## Création des topics Kafka 
-```bash
-wsl 
 ./scripts/setup-kafka-topics.sh
 ```
 
-## Lancement des services Spring Boot 
-platform-service (consumer) => 8081
-publisher-service (producer) => 8082
-notification-service 
+### 3. Lancement des Services Spring Boot
+- `platform-service` (Port 8081)
+- `publisher-service` (Port 8082)
+- `notification-service` (Port 8083)
 
-## Tests pour chaque fonctionnalité
-### Création d'un user : 
-```bash
-curl -X POST "http://localhost:8081/platform/register-user" \
--d "userId=U100" \
--d "name=Dupont" \
--d "email=dupont@test.com" \
--d "displayName=JeanD" \
--d "birth=1990-05-12" \
--d "solde=100.5"
+### 4. Tests et Peuplement (Optionnel)
+Exécutez l'un des scripts suivants pour générer des données factices complètes :
+- En bash : `./scripts/test-endpoints.sh`
+- En PowerShell : `pwsh ./scripts/test-endpoints.ps1`
 
-// ou 
-http://localhost:8081/platform/register-user?userId=U100&name=Dupont&email=dupont@test.com&displayName=JeanD&birth=1990-05-12&solde=100.5
-````
+---
 
-### Création d'un redactor 
-```bash
-curl -X POST "http://localhost:8081/platform/register-redactor" \
--d "userId=R200" \
--d "name=Martin" \
--d "email=martin@test.com" \
--d "displayName=MarcM" \
--d "birth=1985-08-20" \
--d "solde=250.75" \
--d "individual=true"
+## 🎮 Interagir via le CLI Interactif
 
-// ou 
-http://localhost:8081/platform/register-redactor?userId=R200&name=Martin&email=martin%40test.com&displayName=MarcM&birth=1985-08-20&solde=250.75&individual=true
+Un script **PowerShell complet** permet de tester toutes les fonctionnalités avec un menu interactif ! C'est le moyen recommandé pour interagir avec le système de la manière la plus ergonomique qui soit.
+
+```powershell
+pwsh ./scripts/cli/souq-interactive.ps1
 ```
 
-### Publication de jeu par un redactor
-```bash
-http://localhost:8082/publisher/publish-game?gameId=G300&title=The%20Witcher%203&description=Open%20world%20RPG&platform=PC&genre=RPG&idEditeur=R200&version=1.0&prixInit=39.99&releaseDate=2025-10-10
-```
+**Principaux comptes de test injectés par le script `test-endpoints` :**
+- **Utilisateurs Acheteurs :** 
+  - `dupont@test.com` (U100)
+  - `martin.acheteur@test.com` (U200)
+- **Éditeur / Vendeur :**
+  - `martin@test.com` (R200)
 
-### Follow d'un utilisateur à un autre  
-```bash
-http://localhost:8081/platform/users/follow?userId=U100&followedId=U200
-```
+___
 
-### Achat d'un jeu
-```bash
-curl -X POST "http://localhost:8081/platform/purchases/game" \
--d "userId=U100" \
--d "gameId=G300"
-```
+## ✨ Vue d'ensemble des Fonctionnalités Implémentées
 
-### Consultation de la bibliothèque d'un utilisateur
-```bash
-curl "http://localhost:8081/platform/purchases/library?userId=U100"
-```
+### 1. Gestion du Catalogue (Catalog)
+Découverte et navigation des jeux publiés par les éditeurs. Filtrage (genre, plateforme) et visualisation des métadonnées ainsi que le calcul automatique du stock et des ventes.
 
-### Dépôt d'un avis (Review) sur un jeu
-```bash
-curl -X POST "http://localhost:8081/platform/reviews/submit" \
--d "userId=U100" \
--d "gameId=G300" \
--d "note=9" \
--d "description=Incroyable !"
-```
+### 2. Gestion des Achats (Purchases)
+Achats directs de jeux/DLC pour les joueurs avec déduction de solde. Ajout à la bibliothèque et vérification instantanée de possession (ownership).
 
-### Noter l'avis d'un autre utilisateur comme utile (Rate)
-*(Remplacer `REVIEW_ID` par l'ID réel généré par la commande précédente)*
-```bash
-curl -X POST "http://localhost:8081/platform/reviews/REVIEW_ID/rate" \
--d "userId=U200" \
--d "isHelpful=true"
-```
+### 3. Social & Editeurs (Follows)
+Système social permettant de suivre d'autres utilisateurs ou des éditeurs de jeux pour recevoir leurs notifications de nouvelles sorties de jeux.
 
-### Signalement d'un bug / incident en jeu
-Les options de gravité (`severity`) valides : `CRITIQUE`, `HAUTE`, `NORMALE`, `BASSE`.
-```bash
-curl -X POST "http://localhost:8081/platform/incidents/report" \
--d "userId=U100" \
--d "gameId=G300" \
--d "severity=HAUTE" \
--d "description=Crashs%20intempestifs" \
--d "environment=Windows%2011"
-```
+### 4. Sessions de Jeu (Playtime)
+Les joueurs peuvent "démarrer" et "arrêter" des sessions de jeu, déclenchant des notifications de l'autre côté.
 
-### Publication d'un patch par l'éditeur
-Les options de modifications (`modifications`) valides : `CORRECTION`, `AJOUT`, `OPTIMISATION`.
-```bash
-curl -X POST "http://localhost:8082/publisher/publish-patch" \
--d "gameId=G300" \
--d "targetVersion=1.0.1" \
--d "patchNotes=Correction%20du%20crash%20sous%20Windows%2011" \
--d "releasedAt=2025-11-20" \
---data-urlencode "modifications=CORRECTION" \
---data-urlencode "modifications=OPTIMISATION"
-```
+### 5. Avis et Notes (Reviews & Ratings)
+Dépôt d'avis vérifié (seulement si le jeu est possédé). Les utilisateurs peuvent voter pour désigner si un avis rédigé par un autre utilisateur leur a été utile.
 
-### Vérifier le statut du jeu modifié (sur la plateforme)
-```bash
-curl "http://localhost:8081/platform/catalog/games/G300"
-```
+### 6. Signalements de Bugs (Incidents)
+Remontée de bugs par les joueurs directement depuis la plateforme, capturable par les éditeurs.
 
-### Check de feedback reviews 
-```bash
-http://localhost:8081/platform/feedback/reviews?gameId=G340
-```
+### 7. Actions Éditeurs (Patches & DLC)
+Espace réservé aux vendeurs pour la publication de nouveautés (extensions DLC) ou la mise à disposition de mises à jour via des "Patchs" modifiant de façon asynchrone les versions listées sur le catalogue global.
 
-### check des incidents
-```bash
-http://localhost:8081/platform/feedback/incidents?gameId=G340"
-```
+### 8. Puits de Notifications (Notification-Service)
+Service de capture et d'historisation des événements Kafka. Centralise via format Avro toutes les alertes asynchrones remontées depuis l'activité du site et des publications (Achat, Dépôt d'avis, Nouveaux Patches, etc...).
 
-### Consultation de statistiques 
-```bash
-http://localhost:8081/platform/feedback/reviews/g1/stats
-```
-
-### Lancement d'un jeu 
-```bash
-http://localhost:8081/platform/sessions/start?userId=ma&gameId=G340
-```
-
-### Fin de jeu 
-```bash
-http://localhost:8081/platform/sessions/end?userId=ma&gameId=G340
-```
-
-### Consultation des stats 
-```bash
-http://localhost:8081/platform/sessions/users/ma/playtime?gameId=G340
-```
-
-
-
+---
+*Ce guide vise à assurer que tous les membres de l'équipe travaillant sur `SouqStationStore` possèdent la même vision et les mêmes outils pour opérer efficacement localement.*

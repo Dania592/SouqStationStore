@@ -2,9 +2,12 @@ package com.souqstation.platform.service;
 
 import com.souqstation.platform.persistence.GameCatalogEntity;
 import com.souqstation.platform.persistence.GameCatalogRepository;
+import com.souqstation.platform.persistence.DlcEntity;
+import com.souqstation.platform.persistence.DlcRepository;
 import com.souqstation.schemas.common.ExecPlatform;
 import com.souqstation.schemas.common.GameGenre;
 import com.souqstation.schemas.events.GamePublished;
+import com.souqstation.schemas.events.DLCPublishedEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +22,11 @@ import java.util.stream.Collectors;
 public class CatalogService {
 
     private final GameCatalogRepository gameCatalogRepository;
+    private final DlcRepository dlcRepository;
 
-    public CatalogService(GameCatalogRepository gameCatalogRepository) {
+    public CatalogService(GameCatalogRepository gameCatalogRepository, DlcRepository dlcRepository) {
         this.gameCatalogRepository = gameCatalogRepository;
+        this.dlcRepository = dlcRepository;
     }
 
     @Transactional
@@ -50,6 +55,29 @@ public class CatalogService {
         gameCatalogRepository.save(catalogEntry);
 
         System.out.println("[CATALOG] Game added to catalog: " + gameId + " - " + event.getName());
+    }
+
+    @Transactional
+    public void addDlcToCatalog(DLCPublishedEvent event) {
+        String dlcId = event.getDlcId();
+
+        if (dlcRepository.existsById(dlcId)) {
+            System.out.println("[CATALOG] DLC already in catalog: " + dlcId);
+            return;
+        }
+
+        DlcEntity dlcEntry = new DlcEntity(
+                dlcId,
+                event.getGameId(),
+                event.getName(),
+                event.getDescription(),
+                event.getPublisherId(),
+                event.getPrice(),
+                event.getReleaseDate());
+
+        dlcRepository.save(dlcEntry);
+
+        System.out.println("[CATALOG] DLC added to catalog: " + dlcId + " - " + event.getName());
     }
 
     @Transactional
@@ -100,6 +128,18 @@ public class CatalogService {
 
     public long countGamesByPublisher(String publisherId) {
         return gameCatalogRepository.countByPublisherId(publisherId);
+    }
+
+    public List<Map<String, Object>> getDlcsByGame(String gameId) {
+        List<DlcEntity> dlcs = dlcRepository.findByGameId(gameId);
+        return dlcs.stream().map(d -> Map.<String, Object>of(
+                "dlcId", d.getDlcId(),
+                "gameId", d.getGameId(),
+                "name", d.getName(),
+                "description", d.getDescription() != null ? d.getDescription() : "",
+                "publisherId", d.getPublisherId(),
+                "price", d.getPrice() != null ? d.getPrice() : 0.0,
+                "releaseDate", d.getReleaseDate().toString())).collect(Collectors.toList());
     }
 
     // Méthodes utilitaires de conversion

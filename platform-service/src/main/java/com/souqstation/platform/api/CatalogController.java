@@ -28,8 +28,7 @@ public class CatalogController {
     public ResponseEntity<Map<String, Object>> getAllGames(
             @RequestParam(required = false) GameGenre genre,
             @RequestParam(required = false) ExecPlatform platform,
-            @RequestParam(required = false) Double maxPrice
-    ) {
+            @RequestParam(required = false) Double maxPrice) {
         List<Map<String, Object>> games;
 
         // Filtrer selon les paramètres
@@ -47,8 +46,7 @@ public class CatalogController {
 
         return ResponseEntity.ok(Map.of(
                 "totalGames", games.size(),
-                "games", games
-        ));
+                "games", games));
     }
 
     /**
@@ -57,8 +55,7 @@ public class CatalogController {
      */
     @GetMapping("/games/{gameId}")
     public ResponseEntity<Map<String, Object>> getGameDetails(
-            @PathVariable String gameId
-    ) {
+            @PathVariable String gameId) {
         Optional<Map<String, Object>> game = catalogService.getGameById(gameId);
 
         if (game.isEmpty()) {
@@ -69,20 +66,33 @@ public class CatalogController {
     }
 
     /**
+     * Liste des DLCs d'un jeu
+     * GET /platform/catalog/games/{gameId}/dlcs
+     */
+    @GetMapping("/games/{gameId}/dlcs")
+    public ResponseEntity<Map<String, Object>> getGameDlcs(
+            @PathVariable String gameId) {
+        List<Map<String, Object>> dlcs = catalogService.getDlcsByGame(gameId);
+
+        return ResponseEntity.ok(Map.of(
+                "gameId", gameId,
+                "dlcCount", dlcs.size(),
+                "dlcs", dlcs));
+    }
+
+    /**
      * Jeux par éditeur
      * GET /platform/catalog/publishers/{publisherId}/games
      */
     @GetMapping("/publishers/{publisherId}/games")
     public ResponseEntity<Map<String, Object>> getGamesByPublisher(
-            @PathVariable String publisherId
-    ) {
+            @PathVariable String publisherId) {
         List<Map<String, Object>> games = catalogService.getGamesByPublisher(publisherId);
 
         return ResponseEntity.ok(Map.of(
                 "publisherId", publisherId,
                 "gameCount", games.size(),
-                "games", games
-        ));
+                "games", games));
     }
 
     /**
@@ -91,14 +101,12 @@ public class CatalogController {
      */
     @GetMapping("/publishers/{publisherId}/count")
     public ResponseEntity<Map<String, Object>> countGamesByPublisher(
-            @PathVariable String publisherId
-    ) {
+            @PathVariable String publisherId) {
         long count = catalogService.countGamesByPublisher(publisherId);
 
         return ResponseEntity.ok(Map.of(
                 "publisherId", publisherId,
-                "gameCount", count
-        ));
+                "gameCount", count));
     }
 
     /**
@@ -107,15 +115,13 @@ public class CatalogController {
      */
     @GetMapping("/genres/{genre}")
     public ResponseEntity<Map<String, Object>> getGamesByGenre(
-            @PathVariable GameGenre genre
-    ) {
+            @PathVariable GameGenre genre) {
         List<Map<String, Object>> games = catalogService.getGamesByGenre(genre);
 
         return ResponseEntity.ok(Map.of(
                 "genre", genre.name(),
                 "gameCount", games.size(),
-                "games", games
-        ));
+                "games", games));
     }
 
     /**
@@ -124,15 +130,13 @@ public class CatalogController {
      */
     @GetMapping("/platforms/{platform}")
     public ResponseEntity<Map<String, Object>> getGamesByPlatform(
-            @PathVariable ExecPlatform platform
-    ) {
+            @PathVariable ExecPlatform platform) {
         List<Map<String, Object>> games = catalogService.getGamesByPlatform(platform);
 
         return ResponseEntity.ok(Map.of(
                 "platform", platform.name(),
                 "gameCount", games.size(),
-                "games", games
-        ));
+                "games", games));
     }
 
 }

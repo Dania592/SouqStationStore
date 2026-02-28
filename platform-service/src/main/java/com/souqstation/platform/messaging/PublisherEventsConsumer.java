@@ -86,6 +86,7 @@ public class PublisherEventsConsumer {
         }
 
         consumedEventRepository.save(new ConsumedEventEntity(eventId, eventType, occurredAt, Instant.now()));
+        catalogService.addDlcToCatalog(event);
 
         System.out.println("[PLATFORM] processed DLC key=" + key
                 + " eventId=" + eventId

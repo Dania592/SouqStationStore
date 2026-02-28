@@ -25,4 +25,20 @@ public class NotificationController {
     public List<NotificationEntity> last(@PathVariable String userId) {
         return notificationRepository.findTop50ByUserIdOrderByCreatedAtDesc(userId);
     }
+
+    @PostMapping("/send")
+    public NotificationEntity send(
+            @RequestParam String userId,
+            @RequestParam String type,
+            @RequestParam String message) {
+
+        NotificationEntity notif = new NotificationEntity(
+                java.util.UUID.randomUUID().toString(),
+                userId,
+                type,
+                message,
+                java.time.Instant.now(),
+                "manual-" + java.util.UUID.randomUUID().toString());
+        return notificationRepository.save(notif);
+    }
 }

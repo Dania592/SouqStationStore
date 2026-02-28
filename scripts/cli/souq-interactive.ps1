@@ -384,6 +384,7 @@ function CatalogListGames {
   $genre = (Prompt "Filtre genre (optionnel)" "").ToUpper()
   $platform = (Prompt "Filtre plateforme (optionnel)" "").ToUpper()
   $maxPrice = Prompt "Filtre prix max (optionnel)" ""
+  $promoOnly = (Prompt "Voir uniquement les promotions (o/n)" "n").ToLower()
 
   $qs = @()
   if ($genre -ne "") { $qs += "genre=$(UrlEncode $genre)" }
@@ -397,7 +398,12 @@ function CatalogListGames {
 
     $resp = Invoke-RestMethod -Method GET -Uri $url
 
-    $items = $resp.games
+    $items = @($resp.games)
+    
+    if ($promoOnly -eq "o" -or $promoOnly -eq "y") {
+      $items = $items | Where-Object { $_.description -match "\[PROMOTION\]" }
+    }
+
     if ($null -eq $items -or $items.Count -eq 0) {
       Write-Host "Aucun jeu dans le catalogue."
     } else {
@@ -745,6 +751,24 @@ function MyNotifications {
   Pause
 }
 
+function CreateNotificationTest {
+  if ($script:CURRENT_ROLE -eq "NONE") { Write-Host "Veuillez d'abord vous connecter."; Pause; return }
+
+  $type = Prompt "Type" "TEST_NOTIF"
+  $msg = Prompt "Message" "Ceci est un test"
+  
+  $body = "userId=$(UrlEncode $($script:CURRENT_USER_ID))&type=$(UrlEncode $type)&message=$(UrlEncode $msg)"
+
+  try {
+    $url = "$($env:NOTIF_URL)/notifications/send"
+    $r = Invoke-RestMethod -Method POST -Uri $url -Body $body -ContentType "application/x-www-form-urlencoded"
+    Write-Host "Notification créée avec succès!"
+    $r | ConvertTo-Json -Depth 10
+  } catch { ShowHttpError $_ }
+
+  Pause
+}
+
 # =========================
 # NEW: Gameplay Sessions (/platform/sessions)
 # =========================
@@ -932,6 +956,7 @@ function Menu {
 
   Write-Host "------ Notifications ------"
   Write-Host "21) Voir mes notifications"
+  Write-Host "21b) Créer une notif test"
 
   if ($script:CURRENT_ROLE -eq "REDACTOR") {
     Write-Host "------ Publisher (Éditeur) ------"
@@ -1004,6 +1029,7 @@ while ($true) {
     "20" { CountIncidentsByGame; continue }
 
     "21" { MyNotifications; continue }
+    "21b" { CreateNotificationTest; continue }
 
     "30" { StartGameSession; continue }
     "31" { EndGameSession; continue }

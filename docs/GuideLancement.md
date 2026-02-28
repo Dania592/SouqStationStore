@@ -8,11 +8,17 @@ Nous avons créé un script interactif **`start.ps1`** situé à la racine du pr
 Ce script prend en charge l'initialisation de l'environnement de bout en bout.
 
 **Pour lancer le projet via le script :**
-1. Ouvrez un terminal (PowerShell recommandé).
+1. Ouvrez un terminal.
 2. Lancez la commande suivante à la racine :
-   ```powershell
-   pwsh ./start.ps1
-   ```
+   - Sur **Windows** :
+     ```powershell
+     pwsh ./start.ps1
+     ```
+   - Sur **Mac/Linux** :
+     ```bash
+     chmod +x ./start.sh
+     ./start.sh
+     ```
 3. Suivez les instructions à l'écran :
    - Le script lancera Docker (Kafka, Zookeeper, Registry, Postgres).
    - Il créera les topics Kafka requis.

@@ -23,7 +23,7 @@ public class ReviewService {
     private final PlatformReviewEventProducer producer;
     private final GameplayService gameplayService;
     private final GameCatalogRepository gameCatalogRepository;
-    private static final long MIN_REVIEW_PLAYTIME_SECONDS = 3L * 60L; // 3 minutes de jeu minimum
+    private static final long MIN_REVIEW_PLAYTIME_SECONDS = 3L; // 3 minutes de jeu minimum
 
     public ReviewService(
             ReviewRepository reviewRepository,
@@ -73,9 +73,8 @@ public class ReviewService {
         long playedSeconds = gameplayService.getTotalPlaytimeSeconds(userId, gameId);
         if (playedSeconds < MIN_REVIEW_PLAYTIME_SECONDS) {
             long remaining = MIN_REVIEW_PLAYTIME_SECONDS - playedSeconds;
-            long remainingMin = (remaining + 59) / 60;
             throw new IllegalArgumentException(
-                    "You must play at least 3 minutes before reviewing. Remaining: " + remainingMin + "minute(s).");
+                    "You must play at least 3 seconds before reviewing. Remaining: " + remaining + "(s).");
         }
 
         // 6) Créer la review

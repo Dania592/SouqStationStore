@@ -328,8 +328,8 @@ function PublishGame {
     gameId      = Prompt "ID_Jeu" "game-100"
     title       = Prompt "titre" "Halo"
     description = Prompt "description" ""
-    platform    = (Prompt "plateforme" "PC").ToUpper()
-    genre       = (Prompt "genre" "ACTION").ToUpper()
+    platform = (Prompt "Plateforme (PC/SWITCH/WEB)" "PC").ToUpper();
+    genre = (Prompt "Genre (ACTION/RPG/STRATEGY)" "ACTION").ToUpper();
     idEditeur   = $script:CURRENT_USER_ID
     version     = Prompt "version" "1.0.0"
     releaseDate = Prompt "Date de sortie (AAAA-MM-JJ)" "2026-01-01"
@@ -862,7 +862,7 @@ function FeedbackGetIncidents {
   if ($script:CURRENT_ROLE -eq "NONE") { Write-Host "Veuillez d'abord vous connecter."; Pause; return }
 
   $gameId = Prompt "GameId" "G300"
-  $severity = (Prompt "Severity (optionnel: HAUTE|MOYENNE|BASSE)" "")
+  $severity = (Prompt "Sévérité (HAUTE/NORMALE/BASSE/CRITIQUE)" "HAUTE").ToUpper()
   $page = Prompt "Page" "0"
   $size = Prompt "Taille (size)" "20"
 

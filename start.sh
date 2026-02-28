@@ -15,9 +15,9 @@ sleep 15
 
 echo -e "\n[2/4] Création des topics Kafka..."
 if command -v bash >/dev/null 2>&1; then
-    bash ./scripts/setup-kafka-topics.sh
+    bash ./scripts/linux/setup-kafka-topics.sh
 else
-    echo "Avertissement : bash introuvable, impossible de lancer ./scripts/setup-kafka-topics.sh automatiquement."
+    echo "Avertissement : bash introuvable, impossible de lancer ./scripts/linux/setup-kafka-topics.sh automatiquement."
 fi
 
 echo -e "\n[3/4] Démarrage des Microservices"
@@ -32,9 +32,9 @@ read -p "Appuyez sur Entrée UNE FOIS QUE LES 3 SERVICES SONT DÉMARRÉS ET PRÊ
 
 echo -e "\n[4/4] Peuplement de la base de données (test-endpoints)..."
 if command -v bash >/dev/null 2>&1; then
-    bash ./scripts/test-endpoints.sh
+    bash ./scripts/linux/test-endpoints.sh
 else
-    echo "Avertissement : bash introuvable, impossible d'exécuter ./scripts/test-endpoints.sh."
+    echo "Avertissement : bash introuvable, impossible d'exécuter ./scripts/linux/test-endpoints.sh."
 fi
 
 echo -e "\n========================================="
@@ -43,8 +43,8 @@ echo "========================================="
 echo "WORKFLOW POUR INTERAGIR AVEC LE PROJET :"
 echo ""
 echo "1. Lancer le CLI interactif :"
-echo "   > bash ./scripts/cli/souq-interactive.sh"
-echo "   (ou pwsh ./scripts/cli/souq-interactive.ps1 si vous préférez sur Mac/Linux)"
+echo "   > bash ./scripts/linux/cli/souq-interactive.sh"
+echo "   (ou pwsh ./scripts/windows/cli/souq-interactive.ps1 si vous préférez sur Windows)"
 echo ""
 echo "2. Dans le menu du CLI, tester les rôles :"
 echo "   - Option [0] : Connectez-vous avec 'dupont@test.com' (Acheteur de base)."

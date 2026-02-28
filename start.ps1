@@ -16,12 +16,10 @@ Write-Host "`nAttente de l'initialisation de Kafka et de la Base de Données (15
 Start-Sleep -Seconds 15
 
 Write-Host "`n[2/4] Création des topics Kafka..."
-if (Get-Command bash -ErrorAction SilentlyContinue) {
-    bash ./scripts/setup-kafka-topics.sh
-} elseif (Get-Command wsl -ErrorAction SilentlyContinue) {
-    wsl ./scripts/setup-kafka-topics.sh
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+    pwsh ./scripts/windows/setup-kafka-topics.ps1
 } else {
-    Write-Host "Avertissement : impossible de lancer bash/wsl automatiquement pour créer les topics."
+    powershell ./scripts/windows/setup-kafka-topics.ps1
 }
 
 Write-Host "`n[3/4] Démarrage des Microservices"
@@ -36,9 +34,9 @@ Read-Host "Appuyez sur Entrée UNE FOIS QUE LES 3 SERVICES SONT DÉMARRÉS ET PR
 
 Write-Host "`n[4/4] Peuplement de la base de données (test-endpoints)..."
 if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-    pwsh ./scripts/test-endpoints.ps1
+    pwsh ./scripts/windows/test-endpoints.ps1
 } else {
-    powershell ./scripts/test-endpoints.ps1
+    powershell ./scripts/windows/test-endpoints.ps1
 }
 
 Write-Host "`n========================================="
@@ -47,7 +45,7 @@ Write-Host "========================================="
 Write-Host "WORKFLOW POUR INTERAGIR AVEC LE PROJET :"
 Write-Host ""
 Write-Host "1. Lancer le CLI interactif :"
-Write-Host "   > pwsh ./scripts/cli/souq-interactive.ps1"
+Write-Host "   > pwsh ./scripts/windows/cli/souq-interactive.ps1"
 Write-Host ""
 Write-Host "2. Dans le menu du CLI, tester les rôles :"
 Write-Host "   - Option [0] : Connectez-vous avec 'dupont@test.com' (Acheteur de base)."

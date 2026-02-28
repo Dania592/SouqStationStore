@@ -1,13 +1,15 @@
 package com.souqstation.notification.messaging;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.souqstation.notification.messaging.model.EventEnvelopeDto;
 import com.souqstation.notification.messaging.model.UserNotificationDto;
 import com.souqstation.notification.persistence.entity.ConsumedEventEntity;
 import com.souqstation.notification.persistence.entity.NotificationEntity;
 import com.souqstation.notification.persistence.repo.ConsumedEventRepository;
 import com.souqstation.notification.persistence.repo.NotificationRepository;
 import com.souqstation.notification.service.NotificationService;
+import com.souqstation.schemas.events.GamePurchasedEvent;
+import com.souqstation.schemas.events.DLCPurchasedEvent;
+import com.souqstation.schemas.events.ReviewSubmittedEvent;
+import com.souqstation.schemas.events.IncidentReportedEvent;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -15,79 +17,84 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 
 @Component
 public class MultiEventConsumer {
 
-    private final ObjectMapper objectMapper;
     private final ConsumedEventRepository consumedEventRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationService notificationService;
-    private final NotificationProducer notificationProducer;
 
     public MultiEventConsumer(
-            ObjectMapper objectMapper,
             ConsumedEventRepository consumedEventRepository,
             NotificationRepository notificationRepository,
-            NotificationService notificationService,
-            NotificationProducer notificationProducer
-    ) {
-        this.objectMapper = objectMapper;
+            NotificationService notificationService) {
         this.consumedEventRepository = consumedEventRepository;
         this.notificationRepository = notificationRepository;
         this.notificationService = notificationService;
-        this.notificationProducer = notificationProducer;
     }
 
-    @KafkaListener(
-            topics = {"${souq.kafka.topics.publisher}", "${souq.kafka.topics.platform}"},
-            groupId = "notification-service"
-    )
-    public void onMessage(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        // Important: ACK seulement après succès total
+    @KafkaListener(topics = "${souq.topics.platform.purchase}", groupId = "notification-service")
+    public void onPurchase(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            handle(record.value());
+            Object value = record.value();
+            if (value instanceof GamePurchasedEvent event) {
+                process(event.getEventId().toString(), "GamePurchased", event.getOccurredAt(),
+                        notificationService.handle(event));
+            } else if (value instanceof DLCPurchasedEvent event) {
+                process(event.getEventId().toString(), "DLCPurchased", event.getOccurredAt(),
+                        notificationService.handle(event));
+            }
             ack.acknowledge();
         } catch (Exception e) {
-            System.out.print("Erreur dans le multiEventConsumer onMessage :"+ e.getMessage());
+            System.err.println("Error consuming purchase event: " + e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "${souq.topics.platform.review}", groupId = "notification-service")
+    public void onReview(ConsumerRecord<String, Object> record, Acknowledgment ack) {
+        try {
+            Object value = record.value();
+            if (value instanceof ReviewSubmittedEvent event) {
+                process(event.getEventId().toString(), "ReviewSubmitted", event.getOccurredAt(),
+                        notificationService.handle(event));
+            }
+            ack.acknowledge();
+        } catch (Exception e) {
+            System.err.println("Error consuming review event: " + e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "${souq.topics.platform.incident}", groupId = "notification-service")
+    public void onIncident(ConsumerRecord<String, Object> record, Acknowledgment ack) {
+        try {
+            Object value = record.value();
+            if (value instanceof IncidentReportedEvent event) {
+                process(event.getEventId().toString(), "IncidentReported", event.getOccurredAt(),
+                        notificationService.handle(event));
+            }
+            ack.acknowledge();
+        } catch (Exception e) {
+            System.err.println("Error consuming incident event: " + e.getMessage());
         }
     }
 
     @Transactional
-    public void handle(String rawJson) throws Exception {
-        EventEnvelopeDto event = objectMapper.readValue(rawJson, EventEnvelopeDto.class);
-
-        if (event.getEventId() == null || event.getEventId().isBlank()) {
-            // message non conforme => on refuse pour debug (sinon tu "perds" des events)
-            throw new IllegalArgumentException("Missing eventId in message");
-        }
-
-        // Idempotence: si déjà consommé, on ignore
-        if (consumedEventRepository.existsById(event.getEventId())) {
+    public void process(String eventId, String eventType, java.time.Instant occurredAt,
+            UserNotificationDto notification) {
+        if (consumedEventRepository.existsById(eventId)) {
             return;
         }
 
-        // route
-        List<UserNotificationDto> notifications = notificationService.route(event);
+        notificationRepository.save(new NotificationEntity(
+                notification.getNotificationId(),
+                notification.getUserId(),
+                notification.getType(),
+                notification.getMessage(),
+                notification.getCreatedAt(),
+                notification.getSourceEventId()));
 
-        // persist + publish
-        for (UserNotificationDto n : notifications) {
-            notificationRepository.save(new NotificationEntity(
-                    n.getNotificationId(),
-                    n.getUserId(),
-                    n.getType(),
-                    n.getMessage(),
-                    n.getCreatedAt(),
-                    n.getSourceEventId()
-            ));
-            notificationProducer.publish(n);
-        }
-
-        // marquer event consommé
-        Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
         consumedEventRepository.save(
-                new ConsumedEventEntity(event.getEventId(), event.getEventType(), occurredAt)
-        );
+                new ConsumedEventEntity(eventId, eventType, occurredAt != null ? occurredAt : Instant.now()));
     }
 }

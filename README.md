@@ -7,7 +7,7 @@ Le projet s’inscrit dans le cadre des modules **Langages de la JVM** et **Ing�
 
 ---
 
-## 🏛 Architecture Technique
+## Architecture Technique
 
 L'écosystème repose sur des microservices découplés :
 - **Communication Asynchrone** : Kafka avec sémantique *at-least-once* et acheminement robuste.
@@ -17,18 +17,18 @@ L'écosystème repose sur des microservices découplés :
 
 ---
 
-## 🚀 Lancement & Utilisation Rapide
+## Lancement & Utilisation Rapide
 
 Le processus de lancement a été entièrement industrialisé grâce à des scripts cross-platforms garantissant une mise en place en une seule commande (Docker, Kafka, Topics et Peuplement de DB inclus).
 
 La documentation technique complète ainsi que les instructions de lancement et la description des Endpoints REST sont disponibles dans :
-👉 **[`docs/GuideLancement.md`](docs/GuideLancement.md)**
+**[`docs/GuideLancement.md`](docs/GuideLancement.md)**
 
 Un **CLI Interactif (Shell interactif)** est également fourni pour expérimenter toutes les fonctionnalités métier de façon ergonomique.
 
 ---
 
-## 📦 Les Microservices
+## Les Microservices
 
 Le système est constitué de trois services indépendants assurant chacun des responsabilités métiers isolées (Séparation des préoccupations).
 
@@ -53,7 +53,7 @@ Puits asynchrone passif (Sink).
 
 ---
 
-## 📡 Flux Événementiels & Kafka (Topologies)
+## Flux Événementiels & Kafka (Topologies)
 
 Afin d'éviter de coûteux conflits de schémas au sein du Schema Registry Confluent (Erreur 409) et d'assurer une scalabilité des partitions, les événements ont été rigoureusement ségrégués en différents *Topics* dédiés par domaine.
 
@@ -73,7 +73,7 @@ Afin d'éviter de coûteux conflits de schémas au sein du Schema Registry Confl
 
 ---
 
-## 📂 Organisation du Dépôt
+##  Organisation du Dépôt
 
 ```
 SouqStationStore/

@@ -2,7 +2,7 @@
 
 Ce répertoire contient la documentation technique et le guide d'utilisation du projet SouqStationStore.
 
-## 🚀 Démarrage Rapide (Recommandé)
+## Démarrage Rapide (Recommandé)
 
 Nous avons créé un script interactif **`start.ps1`** situé à la racine du projet. 
 Ce script prend en charge l'initialisation de l'environnement de bout en bout.
@@ -28,7 +28,7 @@ Ce script prend en charge l'initialisation de l'environnement de bout en bout.
 
 ---
 
-## 🛠 Lancement Manuel
+## Lancement Manuel
 
 Si vous préférez tout lancer manuellement plutôt que d'utiliser `start.ps1`, voici les étapes détaillées :
 
@@ -57,7 +57,7 @@ Exécutez l'un des scripts suivants pour générer des données factices complè
 
 ---
 
-## 🎮 Interagir via le CLI Interactif
+## Interagir via le CLI Interactif
 
 Un script **PowerShell complet** permet de tester toutes les fonctionnalités avec un menu interactif ! C'est le moyen recommandé pour interagir avec le système de la manière la plus ergonomique qui soit.
 
@@ -74,7 +74,7 @@ pwsh ./scripts/cli/souq-interactive.ps1
 
 ___
 
-## ✨ Vue d'ensemble des Fonctionnalités Implémentées
+## Vue d'ensemble des Fonctionnalités Implémentées
 
 ### 1. Gestion du Catalogue (Catalog)
 Découverte et navigation des jeux publiés par les éditeurs. Filtrage (genre, plateforme) et visualisation des métadonnées ainsi que le calcul automatique du stock et des ventes.

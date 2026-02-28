@@ -215,7 +215,13 @@ curl -s "$PLATFORM_URL/platform/catalog/games/G300" | jq .
 # =========================
 # OPTIONAL: Notifications / DLC (if available)
 # =========================
-echo -e "\n[20] (OPTIONNEL) Notifications de U100..."
+echo -e "\n[20] Envoi manuel d'une notification à U100 (test direct API)..."
+curl -s -X POST "$NOTIF_URL/notifications/send" \
+  -d "userId=U100" \
+  -d "type=TEST_NOTIF" \
+  -d "message=Test notif via shell script" | jq . || true
+
+echo -e "\n[21] (OPTIONNEL) Lecture des notifications de U100..."
 curl -s "$NOTIF_URL/notifications/U100" | jq . || true
 
 echo -e "\n========================================="

@@ -187,7 +187,12 @@ Write-Host "`n[19] Vérification finale du catalogue G300..."
 # =========================
 # OPTIONAL: Notifications / DLC
 # =========================
-Write-Host "`n[20] (OPTIONNEL) Notifications U100..."
+Write-Host "`n[20] Envoi manuel d'une notification à U100..."
+(PostForm "$($env:NOTIF_URL)/notifications/send" @{
+    userId="U100"; type="TEST_NOTIF"; message="Ceci est un test direct via le script PS1"
+}) | ConvertTo-Json -Depth 10
+
+Write-Host "`n[21] (OPTIONNEL) Lecture des notifications de U100..."
 (TryGet "$($env:NOTIF_URL)/notifications/U100") | ConvertTo-Json -Depth 10
 
 Write-Host "========================================="

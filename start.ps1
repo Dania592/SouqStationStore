@@ -4,9 +4,12 @@ Write-Host "========================================="
 Write-Host "   Démarrage Rapide - SouqStationStore   "
 Write-Host "========================================="
 
-Write-Host "`n[1/4] Démarrage de l'infrastructure (Docker)..."
+Write-Host "`n[1/4] Nettoyage et démarrage de l'infrastructure (Docker)..."
 Push-Location "infrastructure/docker"
 try {
+    Write-Host "Arrêt de l'infrastructure existante et suppression des volumes..."
+    docker compose down -v
+    Write-Host "Démarrage des conteneurs..."
     docker compose up -d
 } finally {
     Pop-Location

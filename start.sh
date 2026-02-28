@@ -5,8 +5,11 @@ echo "========================================="
 echo "   Démarrage Rapide - SouqStationStore   "
 echo "========================================="
 
-echo -e "\n[1/4] Démarrage de l'infrastructure (Docker)..."
+echo -e "\n[1/4] Nettoyage et démarrage de l'infrastructure (Docker)..."
 cd infrastructure/docker
+echo "Arrêt de l'infrastructure existante et suppression des volumes (BD, Kafka)..."
+docker compose down -v
+echo "Démarrage des conteneurs..."
 docker compose up -d
 cd ../..
 

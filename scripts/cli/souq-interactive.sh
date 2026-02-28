@@ -263,8 +263,23 @@ purchase_game() {
 }
 
 show_library() {
-    echo "Bibliothèque:"
+    echo "Bibliothèque (Jeux):"
     curl -sSf "$PLATFORM_URL/platform/purchases/library?userId=$CURRENT_USER_ID" | jq . || echo "Requête échouée"
+    pause
+}
+
+purchase_dlc() {
+    local dlcId=$(prompt "dlcId" "D300")
+    echo "Achat du DLC en cours..."
+    curl -sSf -X POST "$PLATFORM_URL/platform/purchases/dlc" \
+        --data-urlencode "userId=$CURRENT_USER_ID" \
+        --data-urlencode "dlcId=$dlcId" | jq . || echo "Requête échouée"
+    pause
+}
+
+show_dlc_library() {
+    echo "Bibliothèque (DLCs):"
+    curl -sSf "$PLATFORM_URL/platform/purchases/dlc-library?userId=$CURRENT_USER_ID" | jq . || echo "Requête échouée"
     pause
 }
 
@@ -331,6 +346,31 @@ publish_patch() {
     pause
 }
 
+publish_dlc() {
+    if [ "$CURRENT_ROLE" != "REDACTOR" ]; then
+        echo "La publication est réservée aux ÉDITEURS."
+        pause
+        return
+    fi
+
+    local dlcId=$(prompt "dlcId" "D300")
+    local gameId=$(prompt "gameId (jeu de base)" "G300")
+    local name=$(prompt "Nom du DLC" "Blood and Wine")
+    local description=$(prompt "Description" "Extension solo")
+    local releaseDate=$(prompt "Date de sortie (AAAA-MM-JJ)" "2026-06-01")
+    local price=$(prompt "Prix" "19.99")
+
+    curl -sSf -X POST "$PUBLISHER_URL/publisher/publish-dlc" \
+        --data-urlencode "dlcId=$dlcId" \
+        --data-urlencode "gameId=$gameId" \
+        --data-urlencode "name=$name" \
+        --data-urlencode "description=$description" \
+        --data-urlencode "publisherId=$CURRENT_USER_ID" \
+        --data-urlencode "releaseDate=$releaseDate" \
+        --data-urlencode "price=$price" | jq . || echo "Requête échouée"
+    pause
+}
+
 # =========================
 # Menu loop
 # =========================
@@ -361,19 +401,22 @@ while true; do
     echo " 4) Mes abonnements (Éditeurs)"
     echo " 5) Voir le catalogue d'un éditeur suivi"
     echo " 6) Acheter un jeu"
-    echo " 7) Ma bibliothèque"
-    echo " 8) Évaluer un jeu"
-    echo " 9) Noter un avis (utile/inutile)"
-    echo "10) Signaler un bug / incident"
+    echo " 7) Ma bibliothèque (Jeux)"
+    echo " 8) Acheter un DLC"
+    echo " 9) Ma bibliothèque (DLCs)"
+    echo "10) Évaluer un jeu"
+    echo "11) Noter un avis (utile/inutile)"
+    echo "12) Signaler un bug / incident"
 
     if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
         echo "--- Éditeur ---"
-        echo "11) Publier un jeu"
-        echo "12) Publier un patch"
-        echo "13) Mes jeux publiés"
-        echo "14) Se déconnecter"
+        echo "13) Publier un jeu"
+        echo "14) Publier un patch"
+        echo "15) Publier un DLC"
+        echo "16) Mes jeux publiés"
+        echo "17) Se déconnecter"
     else
-        echo "11) Se déconnecter"
+        echo "13) Se déconnecter"
     fi
     echo " 0) Quitter"
     
@@ -387,31 +430,40 @@ while true; do
         5) show_games_of_followed_editor ;;
         6) purchase_game ;;
         7) show_library ;;
-        8) submit_review ;;
-        9) rate_review ;;
-        10) report_incident ;;
-        11)
+        8) purchase_dlc ;;
+        9) show_dlc_library ;;
+        10) submit_review ;;
+        11) rate_review ;;
+        12) report_incident ;;
+        13)
             if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
                 publish_game
             else
                 logout
             fi
             ;;
-        12)
+        14)
             if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
                 publish_patch
             else
                 echo "Choix invalide"; pause
             fi
             ;;
-        13)
+        15)
+            if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
+                publish_dlc
+            else
+                logout
+            fi
+            ;;
+        16)
             if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
                 my_games
             else
                 echo "Choix invalide"; pause
             fi
             ;;
-        14)
+        17)
             if [ "$CURRENT_ROLE" = "REDACTOR" ]; then
                 logout
             else

@@ -69,6 +69,16 @@ curl -s -X POST "$PUBLISHER_URL/publisher/publish-game" \
 echo -e "\n[4b] (OPTIONNEL) Count games by publisher (publisher-service)..."
 curl -s "$PUBLISHER_URL/publisher/games/count?idEditeur=R200" | jq . || true
 
+echo -e "\n[4c] Publication du DLC D300 pour le jeu G300 par l'éditeur R200..."
+curl -s -X POST "$PUBLISHER_URL/publisher/publish-dlc" \
+  --data-urlencode "dlcId=D300" \
+  --data-urlencode "gameId=G300" \
+  --data-urlencode "name=Blood and Wine" \
+  --data-urlencode "description=Expansion pack" \
+  --data-urlencode "price=19.99" \
+  --data-urlencode "releaseDate=2026-05-31" \
+  --data-urlencode "publisherId=R200" | jq .
+
 # Wait for async propagation (Kafka)
 sleep 2
 
@@ -107,6 +117,14 @@ curl -s "$PLATFORM_URL/platform/purchases/owns?userId=U100&gameId=G300" | jq . |
 
 echo -e "\n[7c] (OPTIONNEL) Sales count pour G300..."
 curl -s "$PLATFORM_URL/platform/purchases/sales-count?gameId=G300" | jq . || true
+
+echo -e "\n[7d] U100 achète le DLC D300..."
+curl -s -X POST "$PLATFORM_URL/platform/purchases/dlc" \
+  -d "userId=U100" \
+  -d "dlcId=D300" | jq .
+
+echo -e "\n[7e] U100 consulte sa bibliothèque de DLCs..."
+curl -s "$PLATFORM_URL/platform/purchases/dlc-library?userId=U100" | jq .
 
 # =========================
 # 5) Gameplay sessions (NEW)

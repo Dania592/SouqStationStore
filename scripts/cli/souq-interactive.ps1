@@ -478,7 +478,7 @@ function MyDlcs {
   if ($script:CURRENT_ROLE -eq "NONE") { Write-Host "Veuillez d'abord vous connecter."; Pause; return }
 
   try {
-    $url = "$($env:PLATFORM_URL)/platform/purchases/dlcs?userId=$(UrlEncode $($script:CURRENT_USER_ID))"
+    $url = "$($env:PLATFORM_URL)/platform/purchases/dlc-library?userId=$(UrlEncode $($script:CURRENT_USER_ID))"
     $dlcs = Invoke-RestMethod -Method GET -Uri $url
     $dlcs | ConvertTo-Json -Depth 10
   } catch { ShowHttpError $_ }

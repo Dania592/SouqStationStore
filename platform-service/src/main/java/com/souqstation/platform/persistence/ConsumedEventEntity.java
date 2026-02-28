@@ -19,9 +19,6 @@ public class ConsumedEventEntity {
 
     private Instant consumedAt;
 
-    // Si tu as ajouté payload jsonb :
-    // private String payload;
-
     protected ConsumedEventEntity() {}
 
     public ConsumedEventEntity(String eventId, String eventType, Instant occurredAt, Instant consumedAt) {

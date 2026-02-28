@@ -12,8 +12,8 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"     # listener interne docker (utile si un autre container se connecte)
-      - "29092:29092"   # listener host (vos apps IntelliJ se connectent à localhost:29092)
+      - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"

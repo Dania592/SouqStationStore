@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface DlcRepository extends JpaRepository<DlcEntity, String> {
     List<DlcEntity> findByGameId(String gameId);
-    boolean existsByDlcId(String dlcId); // optionnel
+    boolean existsByDlcId(String dlcId);
 }

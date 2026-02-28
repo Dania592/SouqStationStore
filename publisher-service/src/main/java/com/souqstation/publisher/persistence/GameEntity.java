@@ -81,8 +81,6 @@ public class GameEntity {
     public Double getPrice() { return price; }
     public Instant getReleaseDate() { return releaseDate; }
     public Instant getCreatedAt() { return createdAt; }
-
-    // Setter pour la version (nécessaire pour les patches)
     public void setVersion(String version) {
         this.version = version;
     }

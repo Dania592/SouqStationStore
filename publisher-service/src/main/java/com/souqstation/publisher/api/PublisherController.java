@@ -134,7 +134,7 @@ public class PublisherController {
                 @RequestParam String publisherId,
                 @RequestParam(defaultValue = "0.0") double price) {
 
-                // (Optionnel mais recommandé) vérifier que le publisher existe
+                // vérifier que le publisher existe
                 if (!platformClient.redactorExists(publisherId)) {
                         return ResponseEntity.badRequest().body(Map.of(
                                 "status", "REJECTED",
@@ -142,7 +142,7 @@ public class PublisherController {
                                 "publisherId", publisherId));
                 }
 
-                // (Optionnel mais recommandé) vérifier que le jeu existe dans le publisher-service
+                // vérifier que le jeu existe dans le publisher-service
                 if (!gameRepository.existsByGameId(gameId)) {
                         return ResponseEntity.badRequest().body(Map.of(
                                 "status", "REJECTED",
@@ -169,8 +169,8 @@ public class PublisherController {
                         description,
                         publisherId,
                         price,
-                        now,   // releaseDate (si tu veux un param releaseDate, on peut l'ajouter)
-                        now    // createdAt
+                        now,
+                        now
                 ));
 
                 // 2) Publier l'event Kafka (Avro)
